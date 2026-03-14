@@ -1,0 +1,43 @@
+# ===== SECRETS & SENSITIVE CONFIG =====
+.env
+.env.*
+!.env.example
+*.local
+
+# ===== PRIVATE KEYS & CERTIFICATES =====
+*.pem
+identity.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+
+# ===== TOKENS & AUTH FILES =====
+.npmrc
+.pypirc
+.docker/config.json
+.kube/config
+
+# ===== DATABASE =====
+*.sqlite
+*.sqlite3
+*.db
+
+# ===== RUST =====
+target/
+Cargo.lock
+
+# ===== IDE & OS =====
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# ===== LOGS & TEMP =====
+*.log
+logs/
+tmp/
+temp/
+.cache/
