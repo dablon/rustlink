@@ -77,6 +77,20 @@ impl Storage {
         Ok(())
     }
     
+    pub fn get_identity(&self) -> Result<Option<(String, String)>> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn.prepare("SELECT peer_id, username FROM identity LIMIT 1")?;
+        let result = stmt.query_row([], |row| {
+            Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?))
+        });
+        
+        match result {
+            Ok(id) => Ok(Some(id)),
+            Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
+            Err(e) => Err(e.into()),
+        }
+    }
+    
     pub fn add_friend(&self, username: &str, peer_id: &str) -> Result<()> {
         let conn = self.conn.lock().unwrap();
         conn.execute(

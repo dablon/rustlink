@@ -5,7 +5,7 @@ use directories::ProjectDirs;
 use tracing::{info};
 use tracing_subscriber::{fmt, layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
 
-mod cli;
+pub mod cli;
 mod identity;
 mod network;
 mod storage;
