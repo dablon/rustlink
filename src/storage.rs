@@ -28,6 +28,7 @@ pub struct Storage {
     conn: Arc<Mutex<Connection>>,
 }
 
+#[allow(dead_code)]
 impl Storage {
     pub fn new(path: &Path) -> Result<Self> {
         let conn = Connection::open(path)?;

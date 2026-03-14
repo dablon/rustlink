@@ -76,6 +76,7 @@ impl IdentityManager {
     }
     
     /// Get the current peer ID
+    #[allow(dead_code)]
     pub fn get_peer_id(&self) -> String {
         self.peer_id
             .map(|p| p.to_string())

@@ -14,13 +14,17 @@ use tracing::{info, warn};
 use crate::storage::Storage;
 
 pub struct P2PNode {
+    #[allow(dead_code)]
     swarm: Swarm<Kademlia<MemoryStore>>,
+    #[allow(dead_code)]
     peer_id: PeerId,
+    #[allow(dead_code)]
     storage: Storage,
     event_tx: broadcast::Sender<P2PEvent>,
 }
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub enum P2PEvent {
     PeerDiscovered(PeerId),
     PeerConnected(PeerId),
@@ -29,6 +33,7 @@ pub enum P2PEvent {
     FileReceived(PeerId, String, Vec<u8>),
 }
 
+#[allow(dead_code)]
 impl P2PNode {
     pub async fn new(peer_id_str: String, storage: Storage) -> Result<Self> {
         let peer_id = peer_id_str.parse()?;
