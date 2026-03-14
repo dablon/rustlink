@@ -1,0 +1,3 @@
+./target/release/rustlink --version
+[2m2026-03-14T17:13:09.540173Z[0m [32m INFO[0m [2mrustlink[0m[2m:[0m Starting RustLink v0.1.0
+rustlink 0.1.0

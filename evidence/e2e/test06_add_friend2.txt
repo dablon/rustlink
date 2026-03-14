@@ -1,0 +1,5 @@
+./target/release/rustlink add 12D3KooWArSYuQhXtuURGomfVaiqmmjiWLywUZu39ycYaEUZmVhs
+[2m2026-03-14T17:13:09.493635Z[0m [32m INFO[0m [2mrustlink[0m[2m:[0m Starting RustLink v0.1.0
+[2m2026-03-14T17:13:09.494448Z[0m [32m INFO[0m [2mrustlink::identity[0m[2m:[0m Loaded identity: 12D3KooWFsJdgu1wRaF9cyLtF8ZMbvrsePA5NoByCrbp3V97zAHZ
+🔍 Buscando peer 12D3KooWArSYuQhX...
+✓ Solicitud enviada (DHT en desarrollo)

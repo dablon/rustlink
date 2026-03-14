@@ -1,0 +1,8 @@
+./target/release/rustlink init bob
+[2m2026-03-14T17:13:09.399852Z[0m [32m INFO[0m [2mrustlink[0m[2m:[0m Starting RustLink v0.1.0
+[2m2026-03-14T17:13:09.414298Z[0m [32m INFO[0m [2mrustlink[0m[2m:[0m Initializing new identity: bob
+[2m2026-03-14T17:13:09.414415Z[0m [32m INFO[0m [2mrustlink::identity[0m[2m:[0m Generating new identity for user: bob
+✓ Identidad creada!
+ Tu PeerID: 12D3KooWFsJdgu1wRaF9cyLtF8ZMbvrsePA5NoByCrbp3V97zAHZ
+ Compártelo con tus amigos para conectarse
+Bob PeerID: 12D3KooWFsJdgu1wRaF9cyLtF8ZMbvrsePA5NoByCrbp3V97zAHZ

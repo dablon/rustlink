@@ -16,6 +16,19 @@ use network::P2PNode;
 use storage::Storage;
 
 fn get_data_dir() -> PathBuf {
+    // Check for custom data dir via environment variable
+    if let Ok(custom_dir) = std::env::var("RUSTLINK_DATA_DIR") {
+        return PathBuf::from(custom_dir);
+    }
+    
+    // Check for HOME environment
+    if let Ok(home) = std::env::var("HOME") {
+        let data_dir = PathBuf::from(home).join(".local/share/rustlink");
+        if data_dir.exists() || std::fs::create_dir_all(&data_dir).is_ok() {
+            return data_dir;
+        }
+    }
+    
     ProjectDirs::from("com", "rustlink", "RustLink")
         .map(|d| d.data_dir().to_path_buf())
         .unwrap_or_else(|| PathBuf::from("."))

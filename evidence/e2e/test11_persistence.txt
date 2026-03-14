@@ -1,0 +1,7 @@
+Checking SQLite databases...
+
+Alice database:
+./tests/e2e_test.sh: line 134: sqlite3: command not found
+
+Alice friends:
+./tests/e2e_test.sh: line 137: sqlite3: command not found

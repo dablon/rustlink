@@ -1,0 +1,59 @@
+version: '3.8'
+
+services:
+  # User A - Alice
+  alice:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: rustlink_alice
+    environment:
+      - RUSTLINK_USER=alice
+    volumes:
+      - alice_data:/home/appuser/.local/share/rustlink
+    networks:
+      - p2p_net
+    command: ["init", "alice"]
+    stdin_open: true
+    tty: true
+
+  # User B - Bob  
+  bob:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: rustlink_bob
+    environment:
+      - RUSTLINK_USER=bob
+    volumes:
+      - bob_data:/home/appuser/.local/share/rustlink
+    networks:
+      - p2p_net
+    command: ["init", "bob"]
+    stdin_open: true
+    tty: true
+
+  # User C - Charlie
+  charlie:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: rustlink_charlie
+    environment:
+      - RUSTLINK_USER=charlie
+    volumes:
+      - charlie_data:/home/appuser/.local/share/rustlink
+    networks:
+      - p2p_net
+    command: ["init", "charlie"]
+    stdin_open: true
+    tty: true
+
+networks:
+  p2p_net:
+    driver: bridge
+
+volumes:
+  alice_data:
+  bob_data:
+  charlie_data:
