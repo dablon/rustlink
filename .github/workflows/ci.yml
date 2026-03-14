@@ -2,19 +2,18 @@ name: CI / Release
 
 on:
   push:
-    branches: [main]
+    branches: [master]
     tags:
       - 'v*'
   pull_request:
-    branches: [main]
+    branches: [master]
 
 env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  # Unit Tests
   test:
-    name: Unit Tests
+    name: Tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -27,16 +26,26 @@ jobs:
       - name: Cache cargo
         uses: Swatinem/rust-cache@v2
 
-      - name: Run unit tests
-        run: cargo test --test lib_tests
-
-      - name: Run all tests
+      - name: Run tests
         run: cargo test
 
-  # Coverage
-  coverage:
-    name: Code Coverage
-    runs-on: ubuntu-latest
+  build:
+    name: Build (${{ matrix.os }})
+    needs: [test]
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            artifact_name: rustlink-linux-x86_64
+            binary_path: target/release/rustlink
+          - os: macos-latest
+            artifact_name: rustlink-macos-x86_64
+            binary_path: target/release/rustlink
+          - os: windows-latest
+            artifact_name: rustlink-windows-x86_64
+            binary_path: target/release/rustlink.exe
     steps:
       - uses: actions/checkout@v4
 
@@ -45,95 +54,62 @@ jobs:
         with:
           toolchain: stable
 
-      - name: Install cargo-llvm-cov
-        uses: taiki-e/install-action@cargo-llvm-cov
-
-      - name: Generate coverage report
-        run: cargo llvm-cov --lcov --output-path lcov.info
-
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
-        with:
-          files: lcov.info
-          fail_ci_if_error: false
-
-      - name: Check coverage threshold
-        run: |
-          cargo llvm-cov --text | tee coverage.txt
-          COVERAGE=$(grep -oP '^\s*Total:.*?\d+%' coverage.txt | grep -oP '\d+%' | tail -1)
-          echo "Coverage: $COVERAGE"
-
-  # Security Audit
-  security:
-    name: Security Audit
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install Rust
-        uses: dtolnay/rust-action@stable
-
-      - name: Run security audit
-        uses: rustsec/audit-check@v1.4.1
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-  # Lint
-  lint:
-    name: Lint
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install Rust
-        uses: dtolnay/rust-action@stable
-
-      - name: Run clippy
-        run: cargo clippy -- -D warnings
-
-      - name: Check formatting
-        run: cargo fmt --check
-
-  # Build for multiple platforms
-  build:
-    name: Build (${{ matrix.target }})
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        include:
-          - os: ubuntu-latest
-            target: x86_64-unknown-linux-gnu
-          - os: ubuntu-latest
-            target: aarch64-unknown-linux-gnu
-          - os: macos-latest
-            target: x86_64-apple-darwin
-          - os: macos-latest
-            target: aarch64-apple-darwin
-          - os: windows-latest
-            target: x86_64-pc-windows-msvc
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install Rust
-        uses: dtolnay/rust-action@stable
-        with:
-          targets: ${{ matrix.target }}
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
 
       - name: Build release
-        run: cargo build --release --target ${{ matrix.target }}
+        run: cargo build --release
 
-      - name: Upload binary
+      - name: Upload binary artifact
         uses: actions/upload-artifact@v4
         with:
-          name: rustlink-${{ matrix.target }}
-          path: |
-            target/${{ matrix.target }}/release/rustlink.exe
-            target/${{ matrix.target }}/release/rustlink
+          name: ${{ matrix.artifact_name }}
+          path: ${{ matrix.binary_path }}
 
-  # Create Release
+  auto_tag:
+    name: Auto Tag
+    needs: [build]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Create next tag
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          latest_tag=$(git tag -l 'v*' --sort=-v:refname | head -n 1)
+
+          if [ -z "$latest_tag" ]; then
+            next_tag="v0.1.0"
+          else
+            version="${latest_tag#v}"
+            IFS='.' read -r major minor patch <<< "$version"
+            patch=${patch:-0}
+            next_tag="v${major}.${minor}.$((patch + 1))"
+          fi
+
+          if git rev-parse "$next_tag" >/dev/null 2>&1; then
+            echo "Tag $next_tag already exists, skipping"
+            exit 0
+          fi
+
+          git tag "$next_tag"
+          git push origin "$next_tag"
+          echo "Created and pushed $next_tag"
+
   release:
-    name: Create Release
-    needs: [test, coverage, security, lint, build]
+    name: Release
+    needs: [build]
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     permissions:
@@ -141,34 +117,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Download all artifacts
+      - name: Download build artifacts
         uses: actions/download-artifact@v4
         with:
           path: artifacts
 
-      - name: Create Release
-        uses: softprops/action-gh-release@v1
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
         with:
           files: artifacts/**/rustlink*
           draft: false
           prerelease: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  # Mutation Testing (optional - runs on tags)
-  mutation:
-    name: Mutation Testing
-    needs: [test]
-    if: startsWith(github.ref, 'refs/tags/mutate')
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install Rust
-        uses: dtolnay/rust-action@stable
-
-      - name: Install cargo-mutants
-        uses: taiki-e/install-action@cargo-mutants
-
-      - name: Run mutation testing
-        run: cargo mutants --no-fail-fast

@@ -2,23 +2,9 @@
 // Tests the full CLI workflow
 
 use std::process::Command;
-use std::fs;
-use tempfile::TempDir;
 
-fn rustlink_binary() -> String {
-    // Use the release binary
-    let path = std::env::current_exe()
-        .ok()
-        .and_then(|p| p.parent().map(|p| p.to_path_buf()))
-        .unwrap_or_default()
-        .join("rustlink");
-    
-    // Try debug if release doesn't exist
-    if !path.exists() {
-        return "cargo run --".to_string();
-    }
-    
-    path.to_string_lossy().to_string()
+fn project_root() -> &'static str {
+    env!("CARGO_MANIFEST_DIR")
 }
 
 #[test]
@@ -29,7 +15,7 @@ fn test_e2e_init_and_status() {
     // Run init
     let output = Command::new("cargo")
         .args(&["run", "--", "init", "testuser"])
-        .current_dir("/workspace/rustlink")
+        .current_dir(project_root())
         .env("HOME", data_dir)
         .output()
         .expect("Failed to run rustlink init");
@@ -40,7 +26,7 @@ fn test_e2e_init_and_status() {
     // Run status
     let output = Command::new("cargo")
         .args(&["run", "--", "status"])
-        .current_dir("/workspace/rustlink")
+        .current_dir(project_root())
         .env("HOME", data_dir)
         .output()
         .expect("Failed to run rustlink status");
@@ -53,7 +39,7 @@ fn test_e2e_init_and_status() {
 fn test_e2e_version() {
     let output = Command::new("cargo")
         .args(&["run", "--", "--version"])
-        .current_dir("/workspace/rustlink")
+        .current_dir(project_root())
         .output()
         .expect("Failed to run rustlink --version");
     
@@ -65,7 +51,7 @@ fn test_e2e_version() {
 fn test_e2e_help() {
     let output = Command::new("cargo")
         .args(&["run", "--", "--help"])
-        .current_dir("/workspace/rustlink")
+        .current_dir(project_root())
         .output()
         .expect("Failed to run rustlink --help");
     
@@ -81,7 +67,7 @@ fn test_e2e_friends_empty() {
     // Create identity first
     Command::new("cargo")
         .args(&["run", "--", "init", "testuser"])
-        .current_dir("/workspace/rustlink")
+        .current_dir(project_root())
         .env("HOME", data_dir)
         .output()
         .expect("Failed to init");
@@ -89,7 +75,7 @@ fn test_e2e_friends_empty() {
     // Then check friends
     let output = Command::new("cargo")
         .args(&["run", "--", "friends"])
-        .current_dir("/workspace/rustlink")
+        .current_dir(project_root())
         .env("HOME", data_dir)
         .output()
         .expect("Failed to run rustlink friends");
@@ -106,7 +92,7 @@ fn test_e2e_login_after_init() {
     // Init
     Command::new("cargo")
         .args(&["run", "--", "init", "testuser2"])
-        .current_dir("/workspace/rustlink")
+        .current_dir(project_root())
         .env("HOME", data_dir)
         .output()
         .expect("Failed to init");
@@ -114,7 +100,7 @@ fn test_e2e_login_after_init() {
     // Login should work
     let output = Command::new("cargo")
         .args(&["run", "--", "login"])
-        .current_dir("/workspace/rustlink")
+        .current_dir(project_root())
         .env("HOME", data_dir)
         .output()
         .expect("Failed to run rustlink login");
