@@ -23,15 +23,19 @@ impl IdentityManager {
         })
     }
     
+    /// Check if identity exists
+    pub fn has_identity(&self) -> bool {
+        self.data_dir.join("identity.key").exists()
+    }
+    
     /// Create a new identity with username
     pub fn create_identity(&mut self, username: &str) -> Result<String> {
-        // Generate new Ed25519 keypair
         let keypair = Keypair::generate_ed25519();
         let peer_id = PeerId::from(keypair.public());
         
         info!("Generating new identity for user: {}", username);
         
-        // Save the keypair to disk (protobuf encoding)
+        // Save the keypair
         let key_path = self.data_dir.join("identity.key");
         let key_bytes = keypair.to_protobuf_encoding()
             .context("Failed to encode identity key")?;
@@ -76,11 +80,6 @@ impl IdentityManager {
         self.peer_id
             .map(|p| p.to_string())
             .unwrap_or_else(|| "Not initialized".to_string())
-    }
-    
-    /// Get the keypair (for P2P node)
-    pub fn get_keypair(&self) -> Option<Keypair> {
-        self.keypair.clone()
     }
     
     /// Get username

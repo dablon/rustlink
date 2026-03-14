@@ -1,8 +1,8 @@
+use anyhow::Result;
 use clap::{Parser, Subcommand};
 use std::path::PathBuf;
 
-/// RustLink - P2P CLI Social App
-/// Decentralized communication without servers
+/// RustLink CLI
 #[derive(Parser)]
 #[clap(name = "rustlink")]
 #[clap(version = env!("CARGO_PKG_VERSION"))]
@@ -14,45 +14,45 @@ pub struct Opts {
 
 #[derive(Subcommand)]
 pub enum Commands {
-    /// Create a new identity and register username
-    Register {
-        /// Username to register
+    /// Initialize a new identity
+    Init {
+        /// Username for this identity
         username: String,
     },
     
     /// Load existing identity
     Login,
     
-    /// Show current identity status
+    /// Show current status
     Status,
     
-    /// List all friends
+    /// List friends
     Friends,
     
-    /// Add a friend by username
-    AddFriend {
-        /// Username of the friend to add
-        username: String,
+    /// Add a friend by peer ID
+    Add {
+        /// Peer ID of the friend
+        peer_id: String,
     },
     
     /// Open chat with a friend
     Chat {
-        /// Username to chat with
-        username: String,
+        /// Peer ID or username to chat with
+        peer_id: String,
     },
     
     /// Send a file to a friend
-    SendFile {
-        /// Path to the file to send
+    Send {
+        /// Path to the file
         file: PathBuf,
         
-        /// Username of the recipient
+        /// Peer ID of the recipient
         to: String,
     },
     
-    /// Start the P2P node (daemon mode)
+    /// Start P2P node (daemon mode)
     Run,
     
-    /// Show version information
+    /// Show version
     Version,
 }

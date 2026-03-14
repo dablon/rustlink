@@ -35,10 +35,8 @@ impl P2PNode {
         
         info!("Initializing P2P node with peer ID: {}", peer_id);
         
-        // Create keypair
         let keypair = libp2p::identity::Keypair::generate_ed25519();
         
-        // Build TCP transport with tokio provider
         let tcp_transport = libp2p::tcp::tokio::Transport::new(libp2p::tcp::Config::default());
         
         let transport = tcp_transport
@@ -47,19 +45,15 @@ impl P2PNode {
             .multiplex(libp2p::yamux::Config::default())
             .boxed();
         
-        // Create Kademlia behaviour  
         let store = MemoryStore::new(peer_id);
         let kad_config = libp2p::kad::Config::default();
         let kademlia = Kademlia::with_config(peer_id, store, kad_config);
         
-        // Create swarm
         let swarm_config = libp2p::swarm::Config::without_executor();
         let mut swarm = Swarm::new(transport, kademlia, peer_id, swarm_config);
         
-        // Event channel
         let (event_tx, _) = broadcast::channel(100);
         
-        // Listen on random port
         let listen_addr: Multiaddr = "/ip4/0.0.0.0/tcp/0".parse()?;
         swarm.listen_on(listen_addr)?;
         
@@ -76,7 +70,6 @@ impl P2PNode {
     pub async fn start(&mut self) -> Result<()> {
         info!("Starting P2P event loop");
         
-        // Bootstrap
         self.swarm.behaviour_mut().bootstrap()?;
         
         loop {
@@ -138,7 +131,7 @@ impl P2PNode {
             publisher: Some(self.peer_id),
             expires: None,
         };
-        self.swarm.behaviour_mut().put_record(record, libp2p::kad::Quorum::One);
+        let _ = self.swarm.behaviour_mut().put_record(record, libp2p::kad::Quorum::One);
     }
     
     pub fn get_value(&mut self, key: &str) {

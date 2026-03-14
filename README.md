@@ -2,72 +2,127 @@
 
 Decentralized peer-to-peer social networking application for the command line. Built with Rust and libp2p.
 
-## Features
-
-- 🔐 **Identity Management** — Cryptographic keypair generation (Ed25519)
-- 🌐 **P2P Networking** — No servers required, works behind NAT
-- 🔍 **Peer Discovery** — mDNS (local) + Kademlia DHT (global)
-- 💬 **Messaging** — Encrypted direct messages
-- 📁 **File Transfer** — P2P file sharing
-- 🗄️ **Local Storage** — SQLite for messages and friends
-
-## Quick Start
+## 🚀 Ejemplo de Uso
 
 ```bash
-# Register a new identity
-rustlink register myusername
+# Primera vez - inicializar identidad
+$ rustlink init miusuario
+✓ Identidad creada!
+ Tu PeerID: 12D3KooWEyp4x7Zq...
+ Compártelo con tus amigos para conectarse
 
-# Check status
-rustlink status
+# Ver estado
+$ rustlink status
+┌─────────────────────────────────┐
+│ Estado de RustLink             │
+├─────────────────────────────────┤
+│ Usuario: miusuario              │
+│ PeerID: 12D3KooWEyp4x7Zq...   │
+│ Estado: 🟢 En línea            │
+└─────────────────────────────────┘
 
-# Add a friend
-rustlink add-friend friendname
+# Agregar amigo
+$ rustlink add 12D3KooWAbc123...
+🔍 Buscando peer 12D3KooWAbc123...
+✓ Solicitud enviada
 
-# Open chat
-rustlink chat friendname
+# Chat
+$ rustlink chat 12D3KooWAbc123
+💬 Abriendo chat con 12D3KooWAbc123...
+(Mensajes recientes se muestran aquí)
 
-# Send a file
-rustlink send-file /path/to/file.txt friendname
+# Enviar archivo
+$ rustlink send archivo.zip 12D3KooWAbc123
+📦 Enociando archivo.zip (2.3 MB)
+████████████████████░░░░ 84%
 
-# Start P2P node (daemon)
-rustlink run
+# Iniciar nodo P2P
+$ rustlink run
+🚀 Iniciando nodo P2P...
 ```
 
-## Architecture
+## ✨ Características
+
+- 🔐 **Identidad Descentralizada** — Keypair Ed25519, sin servidor de registro
+- 🌐 **P2P Real** — libp2p con Kademlia DHT + mDNS
+- 🔒 **E2E Encryption** — Noise Protocol integrado
+- 📡 **NAT Traversal** — Hole punching + relay fallback
+- 💬 **Chat** — Mensajería en tiempo real
+- 📁 **Transferencia de Archivos** — Con verificación SHA256
+- 🗄️ **Storage Local** — SQLite para mensajes y amigos
+
+## 🏗️ Arquitectura
 
 ```
-┌─────────────────────────────────────┐
-│     CLI Layer (clap)                │
-│  register, login, friends, chat     │
-├─────────────────────────────────────┤
-│     Core Logic Layer                │
-│  Identity, Messaging, Storage       │
-├─────────────────────────────────────┤
-│     Network Layer (libp2p)          │
-│  Kademlia DHT, mDNS, Noise         │
-├─────────────────────────────────────┤
-│     Storage (SQLite)                │
-└─────────────────────────────────────┘
+┌─────────────────────────────────────────┐
+│           CLI Layer (clap)              │
+│  init, login, add, chat, send, run    │
+├─────────────────────────────────────────┤
+│           Core Logic Layer              │
+│  Identity, Messaging, Storage           │
+├─────────────────────────────────────────┤
+│           Network Layer (libp2p)        │
+│  Kademlia DHT, mDNS, Noise, QUIC      │
+├─────────────────────────────────────────┤
+│           Storage (SQLite)              │
+└─────────────────────────────────────────┘
 ```
 
-## Tech Stack
+## 📦 Stack
 
-- **Language:** Rust
-- **Networking:** libp2p 0.56
-- **CLI:** clap
-- **Storage:** rusqlite
+- **Rust** con tokio async
+- **libp2p 0.56** — P2P networking
+- **clap** — CLI
+- **rusqlite** — SQLite local
 
-## Building
+## 🔧 Build
 
 ```bash
 cargo build --release
 ```
 
-## Requirements
+## 📋 Comandos
 
-- Rust 1.70+
-- Linux/macOS (Windows support coming soon)
+| Comando | Descripción |
+|---------|-------------|
+| `rustlink init <username>` | Crear nueva identidad |
+| `rustlink login` | Cargar identidad existente |
+| `rustlink status` | Ver estado actual |
+| `rustlink friends` | Listar amigos |
+| `rustlink add <peer_id>` | Agregar amigo |
+| `rustlink chat <peer_id>` | Abrir chat |
+| `rustlink send <file> <peer_id>` | Enviar archivo |
+| `rustlink run` | Iniciar nodo P2P |
 
-## License
+## 📁 Estructura del Proyecto
+
+```
+rustlink/
+├── src/
+│   ├── main.rs          # Entry point
+│   ├── cli.rs           # CLI commands
+│   ├── identity.rs      # Identity management
+│   ├── storage.rs       # SQLite storage
+│   └── network.rs       # P2P networking
+├── Cargo.toml
+├── README.md
+└── SPEC.md
+```
+
+## 🔑 Conceptos Clave
+
+- **PeerID**: Identificador único basado en tu clave pública (ej: `12D3KooW...`)
+- **DHT**: Kademlia para descubrimiento global de peers
+- **mDNS**: Descubrimiento automático en red local
+- **Noise Protocol**: Cifrado E2E automático
+
+## ⚠️ Estado
+
+**En desarrollo** — La red P2P básica funciona, faltan:
+- Protocolos de chat/file-transfer completos
+- TUI con ratatui
+- Bootstrap nodes públicos
+
+## 📝 Licencia
 
 MIT

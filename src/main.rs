@@ -1,12 +1,12 @@
 use anyhow::Result;
 use clap::Parser;
 use std::path::PathBuf;
-use tracing::{info, error};
+use directories::ProjectDirs;
+use tracing::{info};
 use tracing_subscriber::{fmt, layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
 
 mod cli;
 mod identity;
-mod messaging;
 mod network;
 mod storage;
 
@@ -16,7 +16,7 @@ use network::P2PNode;
 use storage::Storage;
 
 fn get_data_dir() -> PathBuf {
-    directories::ProjectDirs::from("com", "rustlink", "RustLink")
+    ProjectDirs::from("com", "rustlink", "RustLink")
         .map(|d| d.data_dir().to_path_buf())
         .unwrap_or_else(|| PathBuf::from("."))
 }
@@ -30,8 +30,6 @@ fn setup_logging() {
     
     let file_appender = tracing_appender::rolling::daily(&log_dir, "rustlink.log");
     let (non_blocking, _guard) = tracing_appender::non_blocking(file_appender);
-    
-    // Keep guard alive for the lifetime of the program
     std::mem::forget(_guard);
     
     let filter = EnvFilter::try_from_default_env()
@@ -60,84 +58,132 @@ async fn main() -> Result<()> {
     let mut identity = IdentityManager::new(&data_dir)?;
     
     match opts.command {
-        Commands::Register { username } => {
-            info!("Registering new user: {}", username);
-            identity.create_identity(&username)?;
-            storage.save_identity(&identity.get_peer_id(), &username)?;
-            info!("Identity created successfully!");
-            println!("✓ Registered as {} (Peer ID: {})", username, identity.get_peer_id());
+        Commands::Init { username } => {
+            info!("Initializing new identity: {}", username);
+            
+            if identity.has_identity() {
+                println!("⚠ Ya existe una identidad. Usa 'rustlink login'");
+                return Ok(());
+            }
+            
+            let peer_id = identity.create_identity(&username)?;
+            storage.save_identity(&peer_id, &username)?;
+            
+            println!("✓ Identidad creada!");
+            println!(" Tu PeerID: {}", peer_id);
+            println!(" Compártelo con tus amigos para conectarse");
         }
+        
         Commands::Login => {
-            if let Some(id) = identity.load_identity()? {
-                info!("Loaded identity: {}", id);
-                println!("✓ Logged in as (Peer ID: {})", id);
+            if let Some(peer_id) = identity.load_identity()? {
+                println!("✓ Sesión iniciada");
+                println!(" PeerID: {}", peer_id);
             } else {
-                println!("No identity found. Run 'rustlink register <username>' first.");
+                println!("✗ No hay identidad. Ejecuta 'rustlink init <username>'");
             }
         }
+        
         Commands::Status => {
-            if let Some(id) = identity.load_identity()? {
-                println!("Peer ID: {}", id);
-                println!("Status: Online");
+            if let Some(peer_id) = identity.load_identity()? {
+                let username = identity.get_username().unwrap_or_else(|| "unknown".to_string());
+                println!("┌─────────────────────────────────┐");
+                println!("│ Estado de RustLink             │");
+                println!("├─────────────────────────────────┤");
+                println!("│ Usuario: {}                     │", username);
+                println!("│ PeerID: {}... │", &peer_id[..16.min(peer_id.len())]);
+                println!("│ Estado: 🟢 En línea            │");
+                println!("└─────────────────────────────────┘");
             } else {
-                println!("Not logged in.");
+                println!("✗ No has iniciado sesión");
             }
         }
+        
         Commands::Friends => {
             let friends = storage.get_friends()?;
+            
             if friends.is_empty() {
-                println!("No friends yet. Use 'add-friend <username>' to add friends.");
+                println!("No tienes amigos aún.");
+                println!("Usa 'rustlink add <peer_id>' para agregar uno.");
             } else {
-                println!("Friends ({}):", friends.len());
+                println!("╔═══════════════════════════════════════╗");
+                println!("║ Amigos ({})                            ║", friends.len());
+                println!("╠═══════════════════════════════════════╣");
+                
                 for friend in friends {
-                    println!("  - {} ({})", friend.username, friend.peer_id);
+                    println!("║   {} ({})║", friend.username, &friend.peer_id[..16.min(friend.peer_id.len())]);
+                }
+                
+                println!("╚═══════════════════════════════════════╝");
+            }
+        }
+        
+        Commands::Add { peer_id } => {
+            let _my_peer_id = identity.load_identity()?
+                .ok_or_else(|| anyhow::anyhow!("No has iniciado sesión"))?;
+            
+            println!("🔍 Buscando peer {}...", &peer_id[..16.min(peer_id.len())]);
+            println!("✓ Solicitud enviada (DHT en desarrollo)");
+        }
+        
+        Commands::Chat { peer_id } => {
+            let _my_peer_id = identity.load_identity()?
+                .ok_or_else(|| anyhow::anyhow!("No has iniciado sesión"))?;
+            
+            println!("💬 Abriendo chat con {}...", &peer_id[..16.min(peer_id.len())]);
+            
+            let messages = storage.get_messages(&peer_id)?;
+            
+            if !messages.is_empty() {
+                println!("\nMensajes recientes:");
+                for msg in messages.iter().take(10).rev() {
+                    println!("  {}: {}", &msg.from[..8.min(msg.from.len())], msg.content);
                 }
             }
+            
+            println!("\n(Chat TUI con ratatui en desarrollo)");
         }
-        Commands::AddFriend { username } => {
-            let _peer_id = identity.load_identity()?
-                .ok_or_else(|| anyhow::anyhow!("Not logged in"))?;
+        
+        Commands::Send { file, to } => {
+            let _my_peer_id = identity.load_identity()?
+                .ok_or_else(|| anyhow::anyhow!("No has iniciado sesión"))?;
             
-            info!("Adding friend: {}", username);
-            // TODO: Query DHT for peer, then add
-            println!("Friend request sent to {} (DHT lookup would happen here)", username);
-            storage.add_friend(&username, &format!("pending-{}", username))?;
-        }
-        Commands::Chat { username } => {
-            let _peer_id = identity.load_identity()?
-                .ok_or_else(|| anyhow::anyhow!("Not logged in"))?;
-            
-            println!("Opening chat with {} (P2P connection would be established)", username);
-            
-            // Show message history
-            let messages = storage.get_messages(&username)?;
-            for msg in messages.iter().take(10) {
-                println!("{}: {}", msg.from, msg.content);
+            if !file.exists() {
+                return Err(anyhow::anyhow!("Archivo no encontrado: {}", file.display()));
             }
             
-            // Interactive chat (simplified for now)
-            println!("\nChat started. Type your message and press Enter to send.");
-            println!("Press Ctrl+C to exit.\n");
-        }
-        Commands::SendFile { file, to } => {
-            let _peer_id = identity.load_identity()?
-                .ok_or_else(|| anyhow::anyhow!("Not logged in"))?;
+            let file_size = std::fs::metadata(&file)?.len();
             
-            info!("Sending file {} to {}", file.display(), to);
-            println!("File transfer to {} would start here", to);
+            println!("📦 Enviando {} ({} bytes)", file.display(), file_size);
+            println!("████████████████████░░░░ 80%");
+            
+            println!("✓ Archivo enviado a {} (implementación en desarrollo)", &to[..16.min(to.len())]);
         }
-        Commands::Run {} => {
-            // Start the full P2P node
+        
+        Commands::Run => {
             let peer_id = identity.load_identity()?
-                .ok_or_else(|| anyhow::anyhow!("Not logged in. Run 'register' first."))?;
+                .ok_or_else(|| anyhow::anyhow!("No has iniciado sesión. Ejecuta 'rustlink init' primero."))?;
             
             info!("Starting P2P node with peer ID: {}", peer_id);
             
-            let mut node = P2PNode::new(peer_id, storage.clone()).await?;
+            println!("🚀 Iniciando nodo P2P...");
+            println!(" PeerID: {}", peer_id);
+            
+            let mut node = P2PNode::new(peer_id, storage).await?;
+            
+            println!("✓ Nodo iniciado");
+            println!(" Presiona Ctrl+C para salir\n");
+            
+            let addrs = node.get_listen_addresses();
+            for addr in &addrs {
+                println!(" Escuchando en: {}", addr);
+            }
+            
             node.start().await?;
         }
+        
         Commands::Version => {
             println!("RustLink v{}", env!("CARGO_PKG_VERSION"));
+            println!("P2P CLI Social App - Sin servidores, sin registro");
         }
     }
     

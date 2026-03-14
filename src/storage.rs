@@ -32,7 +32,6 @@ impl Storage {
     pub fn new(path: &Path) -> Result<Self> {
         let conn = Connection::open(path)?;
         
-        // Create tables
         conn.execute_batch(
             "
             CREATE TABLE IF NOT EXISTS identity (
@@ -78,20 +77,6 @@ impl Storage {
         Ok(())
     }
     
-    pub fn get_identity(&self) -> Result<Option<(String, String)>> {
-        let conn = self.conn.lock().unwrap();
-        let mut stmt = conn.prepare("SELECT peer_id, username FROM identity LIMIT 1")?;
-        let result = stmt.query_row([], |row| {
-            Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?))
-        });
-        
-        match result {
-            Ok(id) => Ok(Some(id)),
-            Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
-            Err(e) => Err(e.into()),
-        }
-    }
-    
     pub fn add_friend(&self, username: &str, peer_id: &str) -> Result<()> {
         let conn = self.conn.lock().unwrap();
         conn.execute(
@@ -117,39 +102,6 @@ impl Storage {
         })?.collect::<Result<Vec<_>, _>>()?;
         
         Ok(friends)
-    }
-    
-    pub fn get_pending_friends(&self) -> Result<Vec<Friend>> {
-        let conn = self.conn.lock().unwrap();
-        let mut stmt = conn.prepare(
-            "SELECT peer_id, username, added_at, status FROM friends WHERE status = 'pending'"
-        )?;
-        
-        let friends = stmt.query_map([], |row| {
-            Ok(Friend {
-                peer_id: row.get(0)?,
-                username: row.get(1)?,
-                added_at: row.get(2)?,
-                status: row.get(3)?,
-            })
-        })?.collect::<Result<Vec<_>, _>>()?;
-        
-        Ok(friends)
-    }
-    
-    pub fn accept_friend(&self, peer_id: &str) -> Result<()> {
-        let conn = self.conn.lock().unwrap();
-        conn.execute(
-            "UPDATE friends SET status = 'accepted' WHERE peer_id = ?1",
-            params![peer_id],
-        )?;
-        Ok(())
-    }
-    
-    pub fn remove_friend(&self, peer_id: &str) -> Result<()> {
-        let conn = self.conn.lock().unwrap();
-        conn.execute("DELETE FROM friends WHERE peer_id = ?1", params![peer_id])?;
-        Ok(())
     }
     
     pub fn save_message(&self, msg_uuid: &str, from: &str, to: &str, content: &[u8]) -> Result<i64> {
@@ -187,23 +139,5 @@ impl Storage {
         })?.collect::<Result<Vec<_>, _>>()?;
         
         Ok(messages)
-    }
-    
-    pub fn mark_received(&self, msg_id: i64) -> Result<()> {
-        let conn = self.conn.lock().unwrap();
-        conn.execute(
-            "UPDATE messages SET received = 1 WHERE id = ?1",
-            params![msg_id],
-        )?;
-        Ok(())
-    }
-    
-    pub fn mark_delivered(&self, msg_id: i64) -> Result<()> {
-        let conn = self.conn.lock().unwrap();
-        conn.execute(
-            "UPDATE messages SET delivered = 1 WHERE id = ?1",
-            params![msg_id],
-        )?;
-        Ok(())
     }
 }
