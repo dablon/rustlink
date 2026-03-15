@@ -18,40 +18,40 @@ pub enum Commands {
         /// Username for this identity
         username: String,
     },
-    
+
     /// Load existing identity
     Login,
-    
+
     /// Show current status
     Status,
-    
+
     /// List friends
     Friends,
-    
+
     /// Add a friend by peer ID
     Add {
         /// Peer ID of the friend
         peer_id: String,
     },
-    
+
     /// Open chat with a friend
     Chat {
         /// Peer ID or username to chat with
         peer_id: String,
     },
-    
+
     /// Send a file to a friend
     Send {
         /// Path to the file
         file: PathBuf,
-        
+
         /// Peer ID of the recipient
         to: String,
     },
-    
+
     /// Start P2P node (daemon mode)
     Run,
-    
+
     /// Show version
     Version,
 }

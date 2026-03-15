@@ -32,7 +32,7 @@ pub struct Storage {
 impl Storage {
     pub fn new(path: &Path) -> Result<Self> {
         let conn = Connection::open(path)?;
-        
+
         conn.execute_batch(
             "
             CREATE TABLE IF NOT EXISTS identity (
@@ -61,14 +61,14 @@ impl Storage {
             
             CREATE INDEX IF NOT EXISTS idx_messages_from ON messages(from_peer);
             CREATE INDEX IF NOT EXISTS idx_messages_to ON messages(to_peer);
-            "
+            ",
         )?;
-        
+
         Ok(Self {
             conn: Arc::new(Mutex::new(conn)),
         })
     }
-    
+
     pub fn save_identity(&self, peer_id: &str, username: &str) -> Result<()> {
         let conn = self.conn.lock().unwrap();
         conn.execute(
@@ -77,21 +77,21 @@ impl Storage {
         )?;
         Ok(())
     }
-    
+
     pub fn get_identity(&self) -> Result<Option<(String, String)>> {
         let conn = self.conn.lock().unwrap();
         let mut stmt = conn.prepare("SELECT peer_id, username FROM identity LIMIT 1")?;
         let result = stmt.query_row([], |row| {
             Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?))
         });
-        
+
         match result {
             Ok(id) => Ok(Some(id)),
             Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
             Err(e) => Err(e.into()),
         }
     }
-    
+
     pub fn add_friend(&self, username: &str, peer_id: &str) -> Result<()> {
         let conn = self.conn.lock().unwrap();
         conn.execute(
@@ -100,26 +100,34 @@ impl Storage {
         )?;
         Ok(())
     }
-    
+
     pub fn get_friends(&self) -> Result<Vec<Friend>> {
         let conn = self.conn.lock().unwrap();
         let mut stmt = conn.prepare(
-            "SELECT peer_id, username, added_at, status FROM friends WHERE status = 'accepted'"
+            "SELECT peer_id, username, added_at, status FROM friends WHERE status = 'accepted'",
         )?;
-        
-        let friends = stmt.query_map([], |row| {
-            Ok(Friend {
-                peer_id: row.get(0)?,
-                username: row.get(1)?,
-                added_at: row.get(2)?,
-                status: row.get(3)?,
-            })
-        })?.collect::<Result<Vec<_>, _>>()?;
-        
+
+        let friends = stmt
+            .query_map([], |row| {
+                Ok(Friend {
+                    peer_id: row.get(0)?,
+                    username: row.get(1)?,
+                    added_at: row.get(2)?,
+                    status: row.get(3)?,
+                })
+            })?
+            .collect::<Result<Vec<_>, _>>()?;
+
         Ok(friends)
     }
-    
-    pub fn save_message(&self, msg_uuid: &str, from: &str, to: &str, content: &[u8]) -> Result<i64> {
+
+    pub fn save_message(
+        &self,
+        msg_uuid: &str,
+        from: &str,
+        to: &str,
+        content: &[u8],
+    ) -> Result<i64> {
         let conn = self.conn.lock().unwrap();
         conn.execute(
             "INSERT INTO messages (msg_uuid, from_peer, to_peer, content) VALUES (?1, ?2, ?3, ?4)",
@@ -127,7 +135,7 @@ impl Storage {
         )?;
         Ok(conn.last_insert_rowid())
     }
-    
+
     pub fn get_messages(&self, peer_id: &str) -> Result<Vec<Message>> {
         let conn = self.conn.lock().unwrap();
         let mut stmt = conn.prepare(
@@ -135,24 +143,26 @@ impl Storage {
              FROM messages 
              WHERE from_peer = ?1 OR to_peer = ?1
              ORDER BY sent_at DESC
-             LIMIT 100"
+             LIMIT 100",
         )?;
-        
-        let messages = stmt.query_map([peer_id], |row| {
-            let content_bytes: Vec<u8> = row.get(3)?;
-            let content = String::from_utf8_lossy(&content_bytes).to_string();
-            
-            Ok(Message {
-                id: row.get(0)?,
-                from: row.get(1)?,
-                to: row.get(2)?,
-                content,
-                sent_at: row.get(4)?,
-                received: row.get::<_, i32>(5)? != 0,
-                delivered: row.get::<_, i32>(6)? != 0,
-            })
-        })?.collect::<Result<Vec<_>, _>>()?;
-        
+
+        let messages = stmt
+            .query_map([peer_id], |row| {
+                let content_bytes: Vec<u8> = row.get(3)?;
+                let content = String::from_utf8_lossy(&content_bytes).to_string();
+
+                Ok(Message {
+                    id: row.get(0)?,
+                    from: row.get(1)?,
+                    to: row.get(2)?,
+                    content,
+                    sent_at: row.get(4)?,
+                    received: row.get::<_, i32>(5)? != 0,
+                    delivered: row.get::<_, i32>(6)? != 0,
+                })
+            })?
+            .collect::<Result<Vec<_>, _>>()?;
+
         Ok(messages)
     }
 }
