@@ -91,9 +91,8 @@ jobs:
           git push origin "v${{ steps.version.outputs.VERSION }}"
 
       - name: Create Release
-        uses: softprops/action-gh-release@v2
+        uses: ncipollo/release-action@v1
         with:
-          files: dist/*
-          generate_release_notes: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          artifacts: "dist/*"
+          generateReleaseNotes: true
+          token: ${{ secrets.GITHUB_TOKEN }}
