@@ -85,9 +85,10 @@ jobs:
       - name: Create Tag
         run: |
           git fetch --tags
+          git tag -d "v${{ steps.version.outputs.VERSION }}" 2>/dev/null || true
+          git push origin :refs/tags/v${{ steps.version.outputs.VERSION }} 2>/dev/null || true
           git tag "v${{ steps.version.outputs.VERSION }}"
           git push origin "v${{ steps.version.outputs.VERSION }}"
-          git fetch --tags origin "v${{ steps.version.outputs.VERSION }}"
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
