@@ -67,6 +67,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Install build dependencies
+        run: sudo apt-get update && sudo apt-get install -y build-essential pkg-config
+
       - name: Download binary
         uses: actions/download-artifact@v4
         with:
@@ -98,6 +101,9 @@ jobs:
     container: fedora:latest
     steps:
       - uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: dnf install -y gcc make pkgconfig
 
       - name: Download binary
         uses: actions/download-artifact@v4
