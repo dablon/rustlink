@@ -75,6 +75,37 @@ $ rustlink run
 - **clap** — CLI
 - **rusqlite** — SQLite local
 
+## 🚀 Instalación
+
+### Quick Install (desde Release)
+
+```bash
+# Linux/macOS
+curl -L https://github.com/rustlink/rustlink/releases/latest/download/rustlink -o rustlink && chmod +x rustlink && sudo mv rustlink /usr/local/bin/
+
+# Windows (PowerShell)
+iwr -Uri "https://github.com/rustlink/rustlink/releases/latest/download/rustlink.exe" -OutFile rustlink.exe
+```
+
+### Build desde código
+
+```bash
+# Clonar y compilar
+git clone https://github.com/rustlink/rustlink.git
+cd rustlink
+
+# Opción 1: Script de instalación (recomendado)
+# Linux/macOS/WSL
+./install.sh
+
+# Windows (PowerShell)
+.\install.ps1
+
+# Opción 2: Manual
+cargo build --release
+# El binario estará en target/release/rustlink
+```
+
 ## 🔧 Build
 
 ```bash
