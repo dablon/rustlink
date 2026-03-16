@@ -40,6 +40,9 @@ pub enum Commands {
         peer_id: String,
     },
 
+    /// Open interactive TUI
+    Tui,
+
     /// Send a file to a friend
     Send {
         /// Path to the file
@@ -50,7 +53,11 @@ pub enum Commands {
     },
 
     /// Start P2P node (daemon mode)
-    Run,
+    Run {
+        /// Bootstrap nodes to connect to (format: /ip4/x.x.x.x/tcp/4001/p2p/PeerID)
+        #[clap(long = "bootstrap", short = 'b')]
+        bootstrap: Option<Vec<String>>,
+    },
 
     /// Show version
     Version,

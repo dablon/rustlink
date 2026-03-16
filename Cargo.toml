@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2021"
 authors = ["RustLink Team"]
 description = "P2P CLI Social App - Decentralized communication without servers"
+license = "MIT"
 
 [dependencies]
 # CLI & TUI

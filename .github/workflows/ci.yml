@@ -85,14 +85,11 @@ jobs:
       - name: Build deb package
         run: cargo deb
 
-      - name: Upload .deb to Release
-        if: github.event_name == 'release'
-        uses: softprops/action-gh-release@v2
+      - name: Upload .deb
+        uses: actions/upload-artifact@v4
         with:
-          files: target/debian/*.deb
-          tag_name: ${{ github.ref_name }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          name: rustlink-deb
+          path: target/debian/*.deb
 
   # ============ RPM (.rpm) Package ============
   rpm-package:
@@ -134,15 +131,13 @@ jobs:
         run: |
           RPM_FILE=$(find target -name "*.rpm" | head -1)
           echo "rpm_file=$RPM_FILE" >> $GITHUB_OUTPUT
+          cp "$RPM_FILE" .
 
-      - name: Upload .rpm to Release
-        if: github.event_name == 'release'
-        uses: softprops/action-gh-release@v2
+      - name: Upload .rpm
+        uses: actions/upload-artifact@v4
         with:
-          files: ${{ steps.find-rpm.outputs.rpm_file }}
-          tag_name: ${{ github.ref_name }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          name: rustlink-rpm
+          path: "*.rpm"
 
   # ============ Chocolatey Package ============
   choco-package:
@@ -167,8 +162,7 @@ jobs:
       - name: Create Chocolatey package
         run: pwsh -File .github/scripts/create-choco.ps1
 
-      - name: Upload .nupkg to Release
-        if: github.event_name == 'release'
+      - name: Upload .nupkg
         uses: actions/upload-artifact@v4
         with:
           name: rustlink-choco
@@ -176,7 +170,7 @@ jobs:
 
   # ============ Release ============
   release:
-    needs: [deb-package, rpm-package, choco-package]
+    needs: [build, deb-package, rpm-package, choco-package]
     if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main')
     runs-on: ubuntu-latest
     permissions:
@@ -190,6 +184,8 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: artifacts
+          pattern: rustlink-*
+          merge-multiple: true
 
       - name: Get version
         run: |
@@ -214,7 +210,7 @@ jobs:
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          files: artifacts/**/*
+          files: artifacts/*
           tag_name: v${{ env.VERSION }}
           generate_release_notes: true
         env:

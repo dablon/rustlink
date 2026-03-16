@@ -6,9 +6,12 @@ use tracing::info;
 use tracing_subscriber::{fmt, layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
 
 pub mod cli;
+mod filetransfer;
 mod identity;
+mod messaging;
 mod network;
 mod storage;
+mod tui;
 
 use cli::Commands;
 use identity::IdentityManager;
@@ -166,6 +169,18 @@ async fn main() -> Result<()> {
             println!("\n(Chat TUI con ratatui en desarrollo)");
         }
 
+        Commands::Tui => {
+            let _my_peer_id = identity
+                .load_identity()?
+                .ok_or_else(|| anyhow::anyhow!("No has iniciado sesión"))?;
+
+            info!("Starting TUI...");
+            println!("🎨 Abriendo interfaz TUI...");
+
+            // Run the TUI (simplified - would need proper event handling)
+            println!("(TUI en desarrollo - usa 'rustlink chat <peer_id>' para chat CLI)");
+        }
+
         Commands::Send { file, to } => {
             let _my_peer_id = identity
                 .load_identity()?
@@ -178,7 +193,7 @@ async fn main() -> Result<()> {
             let file_size = std::fs::metadata(&file)?.len();
 
             println!("📦 Enviando {} ({} bytes)", file.display(), file_size);
-            println!("████████████████████░░░░ 80%");
+            println!("████████████████████░░░ 80%");
 
             println!(
                 "✓ Archivo enviado a {} (implementación en desarrollo)",
@@ -186,7 +201,7 @@ async fn main() -> Result<()> {
             );
         }
 
-        Commands::Run => {
+        Commands::Run { bootstrap } => {
             let peer_id = identity.load_identity()?.ok_or_else(|| {
                 anyhow::anyhow!("No has iniciado sesión. Ejecuta 'rustlink init' primero.")
             })?;
@@ -196,12 +211,22 @@ async fn main() -> Result<()> {
             println!("🚀 Iniciando nodo P2P...");
             println!(" PeerID: {}", peer_id);
 
-            let mut node = P2PNode::new(peer_id, storage).await?;
+            let node = P2PNode::new(peer_id, storage).await?;
+
+            // Add bootstrap nodes if provided
+            if let Some(nodes) = bootstrap {
+                for node_addr in nodes {
+                    if let Ok(addr) = node_addr.parse() {
+                        node.add_bootstrap_node(addr).await?;
+                        println!("✓ Bootstrap node agregado");
+                    }
+                }
+            }
 
             println!("✓ Nodo iniciado");
             println!(" Presiona Ctrl+C para salir\n");
 
-            let addrs = node.get_listen_addresses();
+            let addrs = node.get_listen_addresses().await;
             for addr in &addrs {
                 println!(" Escuchando en: {}", addr);
             }
