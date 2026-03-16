@@ -9,8 +9,12 @@ if (-not $workspace) {
 Set-Location $workspace
 
 # Create package directory
-$pkgDir = "chocolatey"
+$pkgDir = Join-Path $workspace "chocolatey"
 New-Item -ItemType Directory -Force -Path $pkgDir | Out-Null
+
+# Binary path (absolute, use forward slashes for XML)
+$binaryPath = Join-Path $workspace "target\release\rustlink.exe"
+$binaryPathXml = $binaryPath -replace '\\', '/'
 
 # Get version from Cargo.toml
 $lines = Get-Content "Cargo.toml"
@@ -37,7 +41,7 @@ $nuspec = @"
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
   </metadata>
   <files>
-    <file src="target\release\rustlink.exe" target="rustlink.exe" />
+    <file src="$binaryPathXml" target="rustlink.exe" />
   </files>
 </package>
 "@
@@ -72,14 +76,13 @@ New-Item -ItemType Directory -Force -Path $installDir | Out-Null
 $installScript | Out-File -FilePath "$installDir\chocolateyInstall.ps1" -Encoding UTF8
 
 # Ensure release binary exists
-$releasePath = Join-Path $workspace "target\release\rustlink.exe"
-if (-not (Test-Path $releasePath)) {
+if (-not (Test-Path $binaryPath)) {
     Write-Host "Building release binary..."
     cargo build --release
 }
 
 # Pack
-choco pack "$pkgDir\rustlink.nuspec" --output-directory .
+choco pack "$pkgDir\rustlink.nuspec" --output-directory $workspace
 
 # Show created files
 Get-ChildItem *.nupkg | ForEach-Object {
