@@ -167,7 +167,6 @@ jobs:
   # ============ Release ============
   release:
     needs: [build, deb-package, choco-package]
-    if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -199,8 +198,7 @@ jobs:
 
   # ============ Publish to Cloudsmith (Public APT) ============
   publish-apt:
-    needs: deb-package
-    if: startsWith(github.ref, 'refs/tags/v')
+    needs: release
     runs-on: ubuntu-latest
     steps:
       - name: Download .deb
