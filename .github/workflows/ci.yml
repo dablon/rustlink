@@ -192,7 +192,7 @@ jobs:
           path: .
 
       - name: Upload to Cloudsmith
-        uses: cloudsmith-action@v1
+        uses: cloudsmith/cloudsmith-action@v1
         with:
           api-key: ${{ secrets.CLOUDSMITH_API_KEY }}
           repo: 'rustlink'
