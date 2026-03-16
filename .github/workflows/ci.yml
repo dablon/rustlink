@@ -179,3 +179,23 @@ jobs:
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # ============ Publish to Cloudsmith (Public APT) ============
+  publish-apt:
+    needs: deb-package
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download .deb
+        uses: actions/download-artifact@v4
+        with:
+          name: rustlink-deb
+          path: .
+
+      - name: Upload to Cloudsmith
+        uses: cloudsmith-action@v1
+        with:
+          api-key: ${{ secrets.CLOUDSMITH_API_KEY }}
+          repo: 'rustlink'
+          format: 'deb'
+          distribution: 'any'
+          source: './rustlink*.deb'

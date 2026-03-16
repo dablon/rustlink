@@ -59,5 +59,8 @@ async-trait = "0.1"
 [dev-dependencies]
 tempfile = "3.10"
 
+[package.metadata.deb]
+binaries = ["rustlink"]
+
 [features]
 default = []
