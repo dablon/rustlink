@@ -1,7 +1,14 @@
 # Chocolatey package script for RustLink
 $ErrorActionPreference = "Stop"
 
-# Create package directory (relative to where script is run, which should be repo root)
+# Get workspace directory
+$workspace = $env:GITHUB_WORKSPACE
+if (-not $workspace) {
+    $workspace = Get-Location
+}
+Set-Location $workspace
+
+# Create package directory
 $pkgDir = "chocolatey"
 New-Item -ItemType Directory -Force -Path $pkgDir | Out-Null
 
@@ -65,7 +72,7 @@ New-Item -ItemType Directory -Force -Path $installDir | Out-Null
 $installScript | Out-File -FilePath "$installDir\chocolateyInstall.ps1" -Encoding UTF8
 
 # Ensure release binary exists
-$releasePath = "target\release\rustlink.exe"
+$releasePath = Join-Path $workspace "target\release\rustlink.exe"
 if (-not (Test-Path $releasePath)) {
     Write-Host "Building release binary..."
     cargo build --release
