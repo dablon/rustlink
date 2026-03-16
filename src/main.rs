@@ -1,44 +1,18 @@
 use anyhow::Result;
 use clap::Parser;
-use directories::ProjectDirs;
-use std::path::PathBuf;
 use tracing::info;
 use tracing_subscriber::{fmt, layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
 
-pub mod cli;
-mod filetransfer;
-mod identity;
-mod messaging;
-mod network;
-mod storage;
-mod tui;
+// Use modules from the library crate
+use rustlink::cli::{Commands, Opts};
+use rustlink::handlers::{handle_add, handle_chat, handle_friends, handle_init, handle_login, handle_send, handle_status, handle_version};
+use rustlink::identity::IdentityManager;
+use rustlink::network::P2PNode;
+use rustlink::storage::Storage;
 
-use cli::Commands;
-use identity::IdentityManager;
-use network::P2PNode;
-use storage::Storage;
-
-fn get_data_dir() -> PathBuf {
-    // Check for custom data dir via environment variable
-    if let Ok(custom_dir) = std::env::var("RUSTLINK_DATA_DIR") {
-        return PathBuf::from(custom_dir);
-    }
-
-    // Check for HOME environment
-    if let Ok(home) = std::env::var("HOME") {
-        let data_dir = PathBuf::from(home).join(".local/share/rustlink");
-        if data_dir.exists() || std::fs::create_dir_all(&data_dir).is_ok() {
-            return data_dir;
-        }
-    }
-
-    ProjectDirs::from("com", "rustlink", "RustLink")
-        .map(|d| d.data_dir().to_path_buf())
-        .unwrap_or_else(|| PathBuf::from("."))
-}
-
+// Use lib functions - setup_logging is specific to binary (writes to files)
 fn setup_logging() {
-    let data_dir = get_data_dir();
+    let data_dir = rustlink::get_data_dir();
     std::fs::create_dir_all(&data_dir).ok();
 
     let log_dir = data_dir.join("logs");
@@ -50,21 +24,21 @@ fn setup_logging() {
 
     let filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info"));
 
-    tracing_subscriber::registry()
+    let _ = tracing_subscriber::registry()
         .with(filter)
         .with(fmt::layer().with_writer(std::io::stdout))
         .with(fmt::layer().with_writer(non_blocking).with_ansi(false))
-        .init();
+        .try_init();
 }
 
 #[tokio::main]
 async fn main() -> Result<()> {
     setup_logging();
 
-    info!("Starting RustLink v{}", env!("CARGO_PKG_VERSION"));
+    info!("Starting RustLink v{}", rustlink::get_version());
 
-    let opts = cli::Opts::parse();
-    let data_dir = get_data_dir();
+    let opts = Opts::parse();
+    let data_dir = rustlink::get_data_dir();
 
     std::fs::create_dir_all(&data_dir)?;
 
@@ -74,49 +48,49 @@ async fn main() -> Result<()> {
 
     match opts.command {
         Commands::Init { username } => {
-            info!("Initializing new identity: {}", username);
-
-            if identity.has_identity() {
-                println!("⚠ Ya existe una identidad. Usa 'rustlink login'");
-                return Ok(());
+            match handle_init(&storage, &mut identity, &username) {
+                Ok(peer_id) => {
+                    println!("✓ Identidad creada!");
+                    println!(" Tu PeerID: {}", peer_id);
+                    println!(" Compártelo con tus amigos para conectarse");
+                }
+                Err(e) => {
+                    println!("⚠ {}", e);
+                }
             }
-
-            let peer_id = identity.create_identity(&username)?;
-            storage.save_identity(&peer_id, &username)?;
-
-            println!("✓ Identidad creada!");
-            println!(" Tu PeerID: {}", peer_id);
-            println!(" Compártelo con tus amigos para conectarse");
         }
 
         Commands::Login => {
-            if let Some(peer_id) = identity.load_identity()? {
-                println!("✓ Sesión iniciada");
-                println!(" PeerID: {}", peer_id);
-            } else {
-                println!("✗ No hay identidad. Ejecuta 'rustlink init <username>'");
+            match handle_login(&mut identity)? {
+                Some(peer_id) => {
+                    println!("✓ Sesión iniciada");
+                    println!(" PeerID: {}", peer_id);
+                }
+                None => {
+                    println!("✗ No hay identidad. Ejecuta 'rustlink init <username>'");
+                }
             }
         }
 
         Commands::Status => {
-            if let Some(peer_id) = identity.load_identity()? {
-                let username = identity
-                    .get_username()
-                    .unwrap_or_else(|| "unknown".to_string());
-                println!("┌─────────────────────────────────┐");
-                println!("│ Estado de RustLink             │");
-                println!("├─────────────────────────────────┤");
-                println!("│ Usuario: {}                     │", username);
-                println!("│ PeerID: {}... │", &peer_id[..16.min(peer_id.len())]);
-                println!("│ Estado: 🟢 En línea            │");
-                println!("└─────────────────────────────────┘");
-            } else {
-                println!("✗ No has iniciado sesión");
+            match handle_status(&mut identity)? {
+                Some((peer_id, username)) => {
+                    println!("┌─────────────────────────────────┐");
+                    println!("│ Estado de RustLink             │");
+                    println!("├─────────────────────────────────┤");
+                    println!("│ Usuario: {}                     │", username);
+                    println!("│ PeerID: {}... │", &peer_id[..16.min(peer_id.len())]);
+                    println!("│ Estado: 🟢 En línea            │");
+                    println!("└─────────────────────────────────┘");
+                }
+                None => {
+                    println!("✗ No has iniciado sesión");
+                }
             }
         }
 
         Commands::Friends => {
-            let friends = storage.get_friends()?;
+            let friends = handle_friends(&storage)?;
 
             if friends.is_empty() {
                 println!("No tienes amigos aún.");
@@ -139,34 +113,38 @@ async fn main() -> Result<()> {
         }
 
         Commands::Add { peer_id } => {
-            let _my_peer_id = identity
-                .load_identity()?
-                .ok_or_else(|| anyhow::anyhow!("No has iniciado sesión"))?;
-
-            println!("🔍 Buscando peer {}...", &peer_id[..16.min(peer_id.len())]);
-            println!("✓ Solicitud enviada (DHT en desarrollo)");
+            match handle_add(&mut identity, &peer_id) {
+                Ok(_) => {
+                    println!("🔍 Buscando peer {}...", &peer_id[..16.min(peer_id.len())]);
+                    println!("✓ Solicitud enviada (DHT en desarrollo)");
+                }
+                Err(e) => {
+                    return Err(e);
+                }
+            }
         }
 
         Commands::Chat { peer_id } => {
-            let _my_peer_id = identity
-                .load_identity()?
-                .ok_or_else(|| anyhow::anyhow!("No has iniciado sesión"))?;
+            match handle_chat(&storage, &mut identity, &peer_id) {
+                Ok(messages) => {
+                    println!(
+                        "💬 Abriendo chat con {}...",
+                        &peer_id[..16.min(peer_id.len())]
+                    );
 
-            println!(
-                "💬 Abriendo chat con {}...",
-                &peer_id[..16.min(peer_id.len())]
-            );
+                    if !messages.is_empty() {
+                        println!("\nMensajes recientes:");
+                        for msg in messages.iter().take(10).rev() {
+                            println!("  {}: {}", &msg.from[..8.min(msg.from.len())], msg.content);
+                        }
+                    }
 
-            let messages = storage.get_messages(&peer_id)?;
-
-            if !messages.is_empty() {
-                println!("\nMensajes recientes:");
-                for msg in messages.iter().take(10).rev() {
-                    println!("  {}: {}", &msg.from[..8.min(msg.from.len())], msg.content);
+                    println!("\n(Chat TUI con ratatui en desarrollo)");
+                }
+                Err(e) => {
+                    return Err(e);
                 }
             }
-
-            println!("\n(Chat TUI con ratatui en desarrollo)");
         }
 
         Commands::Tui => {
@@ -182,23 +160,20 @@ async fn main() -> Result<()> {
         }
 
         Commands::Send { file, to } => {
-            let _my_peer_id = identity
-                .load_identity()?
-                .ok_or_else(|| anyhow::anyhow!("No has iniciado sesión"))?;
+            match handle_send(&mut identity, &file, &to) {
+                Ok(file_size) => {
+                    println!("📦 Enviando {} ({} bytes)", file.display(), file_size);
+                    println!("████████████████████░░ 80%");
 
-            if !file.exists() {
-                return Err(anyhow::anyhow!("Archivo no encontrado: {}", file.display()));
+                    println!(
+                        "✓ Archivo enviado a {} (implementación en desarrollo)",
+                        &to[..16.min(to.len())]
+                    );
+                }
+                Err(e) => {
+                    return Err(e);
+                }
             }
-
-            let file_size = std::fs::metadata(&file)?.len();
-
-            println!("📦 Enviando {} ({} bytes)", file.display(), file_size);
-            println!("████████████████████░░░ 80%");
-
-            println!(
-                "✓ Archivo enviado a {} (implementación en desarrollo)",
-                &to[..16.min(to.len())]
-            );
         }
 
         Commands::Run { bootstrap } => {
@@ -235,7 +210,8 @@ async fn main() -> Result<()> {
         }
 
         Commands::Version => {
-            println!("RustLink v{}", env!("CARGO_PKG_VERSION"));
+            let version = handle_version();
+            println!("RustLink v{}", version);
             println!("P2P CLI Social App - Sin servidores, sin registro");
         }
     }

@@ -90,8 +90,115 @@ mod cli_tests {
         let args = vec!["rustlink", "run"];
         let opts = Opts::parse_from(&args);
         match opts.command {
-            Commands::Run { .. } => {}
+            Commands::Run { bootstrap } => {
+                assert!(bootstrap.is_none());
+            }
             _ => panic!("Expected Run command"),
+        }
+    }
+
+    #[test]
+    fn test_cli_run_command_with_bootstrap() {
+        let args = vec![
+            "rustlink",
+            "run",
+            "--bootstrap",
+            "/ip4/127.0.0.1/tcp/4001/p2p/12D3KooWTest123",
+        ];
+        let opts = Opts::parse_from(&args);
+        match opts.command {
+            Commands::Run { bootstrap } => {
+                assert!(bootstrap.is_some());
+                let nodes = bootstrap.unwrap();
+                assert_eq!(nodes.len(), 1);
+                assert_eq!(
+                    nodes[0],
+                    "/ip4/127.0.0.1/tcp/4001/p2p/12D3KooWTest123"
+                );
+            }
+            _ => panic!("Expected Run command"),
+        }
+    }
+
+    #[test]
+    fn test_cli_run_command_with_multiple_bootstrap() {
+        let args = vec![
+            "rustlink",
+            "run",
+            "-b",
+            "/ip4/127.0.0.1/tcp/4001/p2p/12D3KooWNode1",
+            "-b",
+            "/ip4/192.168.1.1/tcp/4002/p2p/12D3KooWNode2",
+        ];
+        let opts = Opts::parse_from(&args);
+        match opts.command {
+            Commands::Run { bootstrap } => {
+                assert!(bootstrap.is_some());
+                let nodes = bootstrap.unwrap();
+                assert_eq!(nodes.len(), 2);
+            }
+            _ => panic!("Expected Run command"),
+        }
+    }
+
+    #[test]
+    fn test_cli_tui_command() {
+        let args = vec!["rustlink", "tui"];
+        let opts = Opts::parse_from(&args);
+        match opts.command {
+            Commands::Tui => {}
+            _ => panic!("Expected Tui command"),
+        }
+    }
+
+    #[test]
+    fn test_cli_add_command_parsing() {
+        let args = vec!["rustlink", "add", "12D3KooW9ABCDEF123456789"];
+        let opts = Opts::parse_from(&args);
+        match opts.command {
+            Commands::Add { peer_id } => {
+                assert_eq!(peer_id.len(), 24); // Test input length
+            }
+            _ => panic!("Expected Add command"),
+        }
+    }
+
+    #[test]
+    fn test_cli_chat_command_parsing() {
+        let args = vec!["rustlink", "chat", "12D3KooW9ABCDEF123456789"];
+        let opts = Opts::parse_from(&args);
+        match opts.command {
+            Commands::Chat { peer_id } => {
+                assert_eq!(peer_id.len(), 24);
+            }
+            _ => panic!("Expected Chat command"),
+        }
+    }
+
+    #[test]
+    fn test_cli_send_command_file_not_exists() {
+        // This just tests parsing - file existence is checked at runtime
+        let args = vec!["rustlink", "send", "nonexistent.txt", "12D3KooWTest123"];
+        let opts = Opts::parse_from(&args);
+        match opts.command {
+            Commands::Send { file, to } => {
+                assert!(!file.exists());
+                assert_eq!(to, "12D3KooWTest123");
+            }
+            _ => panic!("Expected Send command"),
+        }
+    }
+
+    #[test]
+    fn test_cli_init_with_special_chars_username() {
+        // Test usernames with various characters
+        let args = vec!["rustlink", "init", "user_with_underscore"];
+        let opts = Opts::parse_from(&args);
+        match opts.command {
+            Commands::Init { username } => {
+                assert_eq!(username, "user_with_underscore");
+            }
+            _ => panic!("Expected Init command"),
         }
     }
 
@@ -103,6 +210,32 @@ mod cli_tests {
             Commands::Version => {}
             _ => panic!("Expected Version command"),
         }
+    }
+}
+
+#[cfg(test)]
+mod main_tests {
+    use rustlink::{get_data_dir, get_version, setup_logging};
+
+    #[test]
+    fn test_get_data_dir() {
+        // Should return a valid path
+        let dir = get_data_dir();
+        assert!(dir.to_str().is_some());
+    }
+
+    #[test]
+    fn test_get_version() {
+        let version = get_version();
+        assert!(!version.is_empty());
+        // Version should be semver-like (e.g., "0.1.0")
+        assert!(version.contains('.'));
+    }
+
+    #[test]
+    fn test_setup_logging() {
+        // Should not panic
+        setup_logging();
     }
 }
 
@@ -330,5 +463,168 @@ mod storage_tests {
             let messages = storage.get_messages("12D3KooWA").unwrap();
             assert_eq!(messages.len(), 1);
         }
+    }
+}
+
+#[cfg(test)]
+mod main_handler_tests {
+    use rustlink::handlers::{handle_add, handle_chat, handle_friends, handle_init, handle_login, handle_send, handle_status, handle_version};
+    use rustlink::identity::IdentityManager;
+    use rustlink::storage::Storage;
+    use std::path::Path;
+    use tempfile::TempDir;
+
+    fn create_test_env() -> (Storage, IdentityManager, TempDir) {
+        let temp_dir = tempfile::tempdir().unwrap();
+        let db_path = temp_dir.path().join("test.db");
+        let storage = Storage::new(&db_path).unwrap();
+        let identity = IdentityManager::new(temp_dir.path()).unwrap();
+        (storage, identity, temp_dir)
+    }
+
+    #[test]
+    fn test_handle_version() {
+        let version = handle_version();
+        assert!(!version.is_empty());
+        assert!(version.contains('.'));
+    }
+
+    #[test]
+    fn test_handle_init_creates_identity() {
+        let (storage, mut identity, _temp) = create_test_env();
+
+        let result = handle_init(&storage, &mut identity, "testuser");
+
+        assert!(result.is_ok());
+        let peer_id = result.unwrap();
+        assert!(!peer_id.is_empty());
+        assert!(peer_id.starts_with("12D3KooW"));
+    }
+
+    #[test]
+    fn test_handle_init_already_exists() {
+        let (storage, mut identity, _temp) = create_test_env();
+
+        // First init should succeed
+        handle_init(&storage, &mut identity, "user1").unwrap();
+
+        // Second init should fail
+        let result = handle_init(&storage, &mut identity, "user2");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_handle_login_no_identity() {
+        let (_storage, mut identity, _temp) = create_test_env();
+
+        let result = handle_login(&mut identity).unwrap();
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_handle_login_with_identity() {
+        let (storage, mut identity, _temp) = create_test_env();
+
+        // Create identity first
+        handle_init(&storage, &mut identity, "testuser").unwrap();
+
+        // Now login should work
+        let result = handle_login(&mut identity).unwrap();
+        assert!(result.is_some());
+    }
+
+    #[test]
+    fn test_handle_status_no_identity() {
+        let (_storage, mut identity, _temp) = create_test_env();
+
+        let result = handle_status(&mut identity).unwrap();
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_handle_status_with_identity() {
+        let (storage, mut identity, _temp) = create_test_env();
+
+        // Create identity first
+        handle_init(&storage, &mut identity, "myuser").unwrap();
+
+        // Now status should return identity info
+        let result = handle_status(&mut identity).unwrap();
+        assert!(result.is_some());
+
+        let (peer_id, username) = result.unwrap();
+        assert_eq!(username, "myuser");
+        assert!(peer_id.starts_with("12D3KooW"));
+    }
+
+    #[test]
+    fn test_handle_friends_empty() {
+        let (storage, _identity, _temp) = create_test_env();
+
+        let result = handle_friends(&storage).unwrap();
+        assert!(result.is_empty());
+    }
+
+    #[test]
+    fn test_handle_add_no_session() {
+        let (_storage, mut identity, _temp) = create_test_env();
+
+        let result = handle_add(&mut identity, "12D3KooWTest");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_handle_add_with_session() {
+        let (storage, mut identity, _temp) = create_test_env();
+
+        // Create identity first
+        handle_init(&storage, &mut identity, "testuser").unwrap();
+
+        // Now add should work
+        let result = handle_add(&mut identity, "12D3KooWFriend");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_handle_chat_no_session() {
+        let (storage, mut identity, _temp) = create_test_env();
+
+        let result = handle_chat(&storage, &mut identity, "12D3KooWTest");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_handle_chat_with_session() {
+        let (storage, mut identity, _temp) = create_test_env();
+
+        // Create identity first
+        handle_init(&storage, &mut identity, "testuser").unwrap();
+
+        // Save a message first
+        storage.save_message("msg-1", "12D3KooWA", "12D3KooWB", b"Hello").unwrap();
+
+        // Now chat should work
+        let result = handle_chat(&storage, &mut identity, "12D3KooWA").unwrap();
+        assert!(!result.is_empty());
+    }
+
+    #[test]
+    fn test_handle_send_no_session() {
+        let (_storage, mut identity, _temp) = create_test_env();
+
+        let result = handle_send(&mut identity, Path::new("test.txt"), "12D3KooWTest");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_handle_send_file_not_found() {
+        let (storage, mut identity, _temp) = create_test_env();
+
+        // Create identity first
+        handle_init(&storage, &mut identity, "testuser").unwrap();
+
+        // Try to send non-existent file
+        let result = handle_send(&mut identity, Path::new("nonexistent.txt"), "12D3KooWTest");
+        assert!(result.is_err());
     }
 }
