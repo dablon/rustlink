@@ -67,4 +67,3 @@ package = "rustlink"
 summary = "P2P CLI Social App - Decentralized communication without servers"
 license = "MIT"
 category = "Utility"
-targets = ["x86_64-unknown-linux-gnu"]
