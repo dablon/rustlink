@@ -1,5 +1,10 @@
 name: CI
 
+permissions:
+  contents: write
+  actions: write
+  pull-requests: write
+
 on:
   push:
     branches: [master, main]
@@ -183,6 +188,7 @@ jobs:
   # ============ Publish to Cloudsmith (Public APT) ============
   publish-apt:
     needs: deb-package
+    if: github.event_name == 'release'
     runs-on: ubuntu-latest
     steps:
       - name: Download .deb
@@ -195,7 +201,7 @@ jobs:
         uses: cloudsmith/cloudsmith-action@v1
         with:
           api-key: ${{ secrets.CLOUDSMITH_API_KEY }}
-          repo: 'rustlink'
+          repo: 'nicolas-alcaraz/rustlink'
           format: 'deb'
           distribution: 'any'
           source: './rustlink*.deb'

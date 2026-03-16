@@ -1,7 +1,7 @@
 # Chocolatey package script for RustLink
 $ErrorActionPreference = "Stop"
 
-# Create package directory
+# Create package directory (relative to where script is run, which should be repo root)
 $pkgDir = "chocolatey"
 New-Item -ItemType Directory -Force -Path $pkgDir | Out-Null
 
@@ -63,6 +63,13 @@ Install-Binary -Url `$url -ReturnExitCode
 $installDir = "$pkgDir\tools"
 New-Item -ItemType Directory -Force -Path $installDir | Out-Null
 $installScript | Out-File -FilePath "$installDir\chocolateyInstall.ps1" -Encoding UTF8
+
+# Ensure release binary exists
+$releasePath = "target\release\rustlink.exe"
+if (-not (Test-Path $releasePath)) {
+    Write-Host "Building release binary..."
+    cargo build --release
+}
 
 # Pack
 choco pack "$pkgDir\rustlink.nuspec" --output-directory .
