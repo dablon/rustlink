@@ -61,3 +61,10 @@ tempfile = "3.10"
 
 [features]
 default = []
+
+[package.metadata.rpm]
+package = "rustlink"
+summary = "P2P CLI Social App - Decentralized communication without servers"
+license = "MIT"
+category = "Utility"
+arch = "x86_64"
