@@ -6,7 +6,13 @@ $pkgDir = "chocolatey"
 New-Item -ItemType Directory -Force -Path $pkgDir | Out-Null
 
 # Get version from Cargo.toml
-$version = (Get-Content "Cargo.toml" | Select-String -Pattern '^\s*version\s*=' -First 1 | ForEach-Object { ($_ -split '"')[1] })
+$lines = Get-Content "Cargo.toml"
+foreach ($line in $lines) {
+    if ($line -match '^\s*version\s*=\s*"([^"]+)"') {
+        $version = $matches[1]
+        break
+    }
+}
 
 # Create nuspec
 $nuspec = @"
