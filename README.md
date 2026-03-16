@@ -2,43 +2,101 @@
 
 Decentralized peer-to-peer social networking application for the command line. Built with Rust and libp2p.
 
-## 🚀 Ejemplo de Uso
+## ⚡ Quick Start
 
 ```bash
-# Primera vez - inicializar identidad
-$ rustlink init miusuario
-✓ Identidad creada!
- Tu PeerID: 12D3KooWEyp4x7Zq...
- Compártelo con tus amigos para conectarse
+# Clone and build
+git clone https://github.com/dablon/rustlink.git
+cd rustlink
+cargo generate-lockfile
+cargo build --release
 
-# Ver estado
+# Run
+./target/release/rustlink --help
+```
+
+## 🚀 Usage Examples (Verified)
+
+### 1. Initialize Identity
+```bash
+$ rustlink init testuser
+
+✓ Identidad creada!
+ Tu PeerID: 12D3KooWFUfm6wSYUX9JnxEWN681Vto7dwmaC91Ty1y3d8EeBHQp
+ Compártelo con tus amigos para conectarse
+```
+
+### 2. Login (Load Identity)
+```bash
+$ rustlink login
+
+✓ Sesión iniciada
+ PeerID: 12D3KooWFUfm6wSYUX9JnxEWN681Vto7dwmaC91Ty1y3d8EeBHQp
+```
+
+### 3. Check Status
+```bash
 $ rustlink status
+
 ┌─────────────────────────────────┐
 │ Estado de RustLink             │
 ├─────────────────────────────────┤
-│ Usuario: miusuario              │
-│ PeerID: 12D3KooWEyp4x7Zq...   │
+│ Usuario: testuser                     │
+│ PeerID: 12D3KooWFUfm6wSY... │
 │ Estado: 🟢 En línea            │
 └─────────────────────────────────┘
+```
 
-# Agregar amigo
-$ rustlink add 12D3KooWAbc123...
-🔍 Buscando peer 12D3KooWAbc123...
-✓ Solicitud enviada
+### 4. List Friends
+```bash
+$ rustlink friends
 
-# Chat
-$ rustlink chat 12D3KooWAbc123
-💬 Abriendo chat con 12D3KooWAbc123...
-(Mensajes recientes se muestran aquí)
+No tienes amigos aún.
+Usa 'rustlink add <peer_id>' para agregar uno.
+```
 
-# Enviar archivo
-$ rustlink send archivo.zip 12D3KooWAbc123
-📦 Enociando archivo.zip (2.3 MB)
-████████████████████░░░░ 84%
+### 5. Add Friend
+```bash
+$ rustlink add 12D3KooWTest123456789
 
-# Iniciar nodo P2P (con nodos bootstrap)
-$ rustlink run --bootstrap /ip4/147.75.80.110/tcp/4001/p2p/QmNnooDu7bfjPFoTZYxMNLWUQJyrVwtbZg5gvUBJyJt4Wz
+🔍 Buscando peer 12D3KooWTest1234...
+✓ Solicitud enviada (DHT en desarrollo)
+```
+
+### 6. Open Chat
+```bash
+$ rustlink chat 12D3KooWTest123456789
+
+💬 Abriendo chat con 12D3KooWTest1234...
+
+(Chat TUI con ratatui en desarrollo)
+```
+
+### 7. Send File
+```bash
+$ rustlink send /path/to/file.zip 12D3KooWTest123456789
+
+📦 Enviando /path/to/file.zip (13 bytes)
+████████████████████░░░░ 80%
+✓ Archivo enviado a 12D3KooWTest1234 (implementación en desarrollo)
+```
+
+### 8. Start P2P Node
+```bash
+$ rustlink run
+
 🚀 Iniciando nodo P2P...
+ PeerID: 12D3KooWFUfm6wSYUX9JnxEWN681Vto7dwmaC91Ty1y3d8EeBHQp
+✓ Nodo iniciado
+ Presiona Ctrl+C para salir
+```
+
+### 9. Version
+```bash
+$ rustlink version
+
+RustLink v0.1.0
+P2P CLI Social App - Sin servidores, sin registro
 ```
 
 ## ✨ Características
@@ -112,7 +170,13 @@ cargo build --release
 ## 🔧 Build
 
 ```bash
+# Generate lockfile (required first time)
+cargo generate-lockfile
+
+# Build release binary
 cargo build --release
+
+# Binary location: target/release/rustlink
 ```
 
 ## 📋 Comandos
@@ -168,6 +232,16 @@ rustlink/
 - ✅ File transfer protocol (definido, chunks 64KB + SHA256)
 - ✅ TUI skeleton (ratatui)
 - 🔧 Bootstrap nodes (configurables via CLI)
+
+## 🐳 Docker
+
+```bash
+# Build image
+docker build -t rustlink .
+
+# Run with docker-compose
+docker-compose -f docker-compose.test.yml up
+```
 
 ## 📝 Licencia
 
