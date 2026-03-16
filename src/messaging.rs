@@ -15,15 +15,9 @@ pub enum ChatMessage {
         status: DeliveryStatus,
     },
     /// Friend request
-    FriendRequest {
-        from: String,
-        username: String,
-    },
+    FriendRequest { from: String, username: String },
     /// Friend request response
-    FriendResponse {
-        from: String,
-        accepted: bool,
-    },
+    FriendResponse { from: String, accepted: bool },
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]

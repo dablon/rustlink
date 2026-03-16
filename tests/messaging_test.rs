@@ -2,10 +2,7 @@ use rustlink::messaging::{ChatMessage, DeliveryStatus};
 
 #[test]
 fn test_message_serialization() {
-    let msg = ChatMessage::new_direct(
-        "QmPeerId123".to_string(),
-        "Hello, world!".to_string(),
-    );
+    let msg = ChatMessage::new_direct("QmPeerId123".to_string(), "Hello, world!".to_string());
     let data = msg.serialize().unwrap();
     let decoded = ChatMessage::deserialize(&data).unwrap();
 
@@ -19,13 +16,15 @@ fn test_message_serialization() {
 
 #[test]
 fn test_new_direct() {
-    let msg = ChatMessage::new_direct(
-        "sender".to_string(),
-        "Test message".to_string(),
-    );
+    let msg = ChatMessage::new_direct("sender".to_string(), "Test message".to_string());
 
     match msg {
-        ChatMessage::Direct { msg_uuid, from, content, timestamp } => {
+        ChatMessage::Direct {
+            msg_uuid,
+            from,
+            content,
+            timestamp,
+        } => {
             assert_eq!(from, "sender");
             assert_eq!(content, "Test message");
             assert!(!msg_uuid.is_empty());
@@ -89,7 +88,11 @@ fn test_new_friend_response_rejected() {
 
 #[test]
 fn test_ack_all_statuses() {
-    for status in [DeliveryStatus::Sent, DeliveryStatus::Delivered, DeliveryStatus::Read] {
+    for status in [
+        DeliveryStatus::Sent,
+        DeliveryStatus::Delivered,
+        DeliveryStatus::Read,
+    ] {
         let msg = ChatMessage::new_ack("test-uuid".to_string(), status.clone());
         if let ChatMessage::Acknowledgment { status: s, .. } = msg {
             assert_eq!(s, status);
