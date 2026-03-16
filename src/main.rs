@@ -5,7 +5,10 @@ use tracing_subscriber::{fmt, layer::SubscriberExt, util::SubscriberInitExt, Env
 
 // Use modules from the library crate
 use rustlink::cli::{Commands, Opts};
-use rustlink::handlers::{handle_add, handle_chat, handle_friends, handle_init, handle_login, handle_send, handle_status, handle_version};
+use rustlink::handlers::{
+    handle_add, handle_chat, handle_friends, handle_init, handle_login, handle_send, handle_status,
+    handle_version,
+};
 use rustlink::identity::IdentityManager;
 use rustlink::network::P2PNode;
 use rustlink::storage::Storage;
@@ -47,47 +50,41 @@ async fn main() -> Result<()> {
     let mut identity = IdentityManager::new(&data_dir)?;
 
     match opts.command {
-        Commands::Init { username } => {
-            match handle_init(&storage, &mut identity, &username) {
-                Ok(peer_id) => {
-                    println!("✓ Identidad creada!");
-                    println!(" Tu PeerID: {}", peer_id);
-                    println!(" Compártelo con tus amigos para conectarse");
-                }
-                Err(e) => {
-                    println!("⚠ {}", e);
-                }
+        Commands::Init { username } => match handle_init(&storage, &mut identity, &username) {
+            Ok(peer_id) => {
+                println!("✓ Identidad creada!");
+                println!(" Tu PeerID: {}", peer_id);
+                println!(" Compártelo con tus amigos para conectarse");
             }
-        }
+            Err(e) => {
+                println!("⚠ {}", e);
+            }
+        },
 
-        Commands::Login => {
-            match handle_login(&mut identity)? {
-                Some(peer_id) => {
-                    println!("✓ Sesión iniciada");
-                    println!(" PeerID: {}", peer_id);
-                }
-                None => {
-                    println!("✗ No hay identidad. Ejecuta 'rustlink init <username>'");
-                }
+        Commands::Login => match handle_login(&mut identity)? {
+            Some(peer_id) => {
+                println!("✓ Sesión iniciada");
+                println!(" PeerID: {}", peer_id);
             }
-        }
+            None => {
+                println!("✗ No hay identidad. Ejecuta 'rustlink init <username>'");
+            }
+        },
 
-        Commands::Status => {
-            match handle_status(&mut identity)? {
-                Some((peer_id, username)) => {
-                    println!("┌─────────────────────────────────┐");
-                    println!("│ Estado de RustLink             │");
-                    println!("├─────────────────────────────────┤");
-                    println!("│ Usuario: {}                     │", username);
-                    println!("│ PeerID: {}... │", &peer_id[..16.min(peer_id.len())]);
-                    println!("│ Estado: 🟢 En línea            │");
-                    println!("└─────────────────────────────────┘");
-                }
-                None => {
-                    println!("✗ No has iniciado sesión");
-                }
+        Commands::Status => match handle_status(&mut identity)? {
+            Some((peer_id, username)) => {
+                println!("┌─────────────────────────────────┐");
+                println!("│ Estado de RustLink             │");
+                println!("├─────────────────────────────────┤");
+                println!("│ Usuario: {}                     │", username);
+                println!("│ PeerID: {}... │", &peer_id[..16.min(peer_id.len())]);
+                println!("│ Estado: 🟢 En línea            │");
+                println!("└─────────────────────────────────┘");
             }
-        }
+            None => {
+                println!("✗ No has iniciado sesión");
+            }
+        },
 
         Commands::Friends => {
             let friends = handle_friends(&storage)?;
@@ -112,40 +109,36 @@ async fn main() -> Result<()> {
             }
         }
 
-        Commands::Add { peer_id } => {
-            match handle_add(&mut identity, &peer_id) {
-                Ok(_) => {
-                    println!("🔍 Buscando peer {}...", &peer_id[..16.min(peer_id.len())]);
-                    println!("✓ Solicitud enviada (DHT en desarrollo)");
-                }
-                Err(e) => {
-                    return Err(e);
-                }
+        Commands::Add { peer_id } => match handle_add(&mut identity, &peer_id) {
+            Ok(_) => {
+                println!("🔍 Buscando peer {}...", &peer_id[..16.min(peer_id.len())]);
+                println!("✓ Solicitud enviada (DHT en desarrollo)");
             }
-        }
+            Err(e) => {
+                return Err(e);
+            }
+        },
 
-        Commands::Chat { peer_id } => {
-            match handle_chat(&storage, &mut identity, &peer_id) {
-                Ok(messages) => {
-                    println!(
-                        "💬 Abriendo chat con {}...",
-                        &peer_id[..16.min(peer_id.len())]
-                    );
+        Commands::Chat { peer_id } => match handle_chat(&storage, &mut identity, &peer_id) {
+            Ok(messages) => {
+                println!(
+                    "💬 Abriendo chat con {}...",
+                    &peer_id[..16.min(peer_id.len())]
+                );
 
-                    if !messages.is_empty() {
-                        println!("\nMensajes recientes:");
-                        for msg in messages.iter().take(10).rev() {
-                            println!("  {}: {}", &msg.from[..8.min(msg.from.len())], msg.content);
-                        }
+                if !messages.is_empty() {
+                    println!("\nMensajes recientes:");
+                    for msg in messages.iter().take(10).rev() {
+                        println!("  {}: {}", &msg.from[..8.min(msg.from.len())], msg.content);
                     }
+                }
 
-                    println!("\n(Chat TUI con ratatui en desarrollo)");
-                }
-                Err(e) => {
-                    return Err(e);
-                }
+                println!("\n(Chat TUI con ratatui en desarrollo)");
             }
-        }
+            Err(e) => {
+                return Err(e);
+            }
+        },
 
         Commands::Tui => {
             let _my_peer_id = identity
@@ -159,22 +152,20 @@ async fn main() -> Result<()> {
             println!("(TUI en desarrollo - usa 'rustlink chat <peer_id>' para chat CLI)");
         }
 
-        Commands::Send { file, to } => {
-            match handle_send(&mut identity, &file, &to) {
-                Ok(file_size) => {
-                    println!("📦 Enviando {} ({} bytes)", file.display(), file_size);
-                    println!("████████████████████░░ 80%");
+        Commands::Send { file, to } => match handle_send(&mut identity, &file, &to) {
+            Ok(file_size) => {
+                println!("📦 Enviando {} ({} bytes)", file.display(), file_size);
+                println!("████████████████████░░ 80%");
 
-                    println!(
-                        "✓ Archivo enviado a {} (implementación en desarrollo)",
-                        &to[..16.min(to.len())]
-                    );
-                }
-                Err(e) => {
-                    return Err(e);
-                }
+                println!(
+                    "✓ Archivo enviado a {} (implementación en desarrollo)",
+                    &to[..16.min(to.len())]
+                );
             }
-        }
+            Err(e) => {
+                return Err(e);
+            }
+        },
 
         Commands::Run { bootstrap } => {
             let peer_id = identity.load_identity()?.ok_or_else(|| {

@@ -7,8 +7,8 @@ pub mod network;
 pub mod storage;
 pub mod tui;
 
-use std::path::PathBuf;
 use directories::ProjectDirs;
+use std::path::PathBuf;
 use tracing_subscriber::{fmt, layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
 
 /// Get the data directory for rustlink

@@ -1,5 +1,5 @@
 use libp2p::identity::Keypair;
-use rustlink::network::{DEFAULT_BOOTSTRAP_NODES, P2PEvent, P2PNode};
+use rustlink::network::{P2PEvent, P2PNode, DEFAULT_BOOTSTRAP_NODES};
 use rustlink::storage::Storage;
 use tempfile::TempDir;
 

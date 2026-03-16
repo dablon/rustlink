@@ -111,10 +111,7 @@ mod cli_tests {
                 assert!(bootstrap.is_some());
                 let nodes = bootstrap.unwrap();
                 assert_eq!(nodes.len(), 1);
-                assert_eq!(
-                    nodes[0],
-                    "/ip4/127.0.0.1/tcp/4001/p2p/12D3KooWTest123"
-                );
+                assert_eq!(nodes[0], "/ip4/127.0.0.1/tcp/4001/p2p/12D3KooWTest123");
             }
             _ => panic!("Expected Run command"),
         }
@@ -468,7 +465,10 @@ mod storage_tests {
 
 #[cfg(test)]
 mod main_handler_tests {
-    use rustlink::handlers::{handle_add, handle_chat, handle_friends, handle_init, handle_login, handle_send, handle_status, handle_version};
+    use rustlink::handlers::{
+        handle_add, handle_chat, handle_friends, handle_init, handle_login, handle_send,
+        handle_status, handle_version,
+    };
     use rustlink::identity::IdentityManager;
     use rustlink::storage::Storage;
     use std::path::Path;
@@ -601,7 +601,9 @@ mod main_handler_tests {
         handle_init(&storage, &mut identity, "testuser").unwrap();
 
         // Save a message first
-        storage.save_message("msg-1", "12D3KooWA", "12D3KooWB", b"Hello").unwrap();
+        storage
+            .save_message("msg-1", "12D3KooWA", "12D3KooWB", b"Hello")
+            .unwrap();
 
         // Now chat should work
         let result = handle_chat(&storage, &mut identity, "12D3KooWA").unwrap();

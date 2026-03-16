@@ -98,8 +98,12 @@ fn test_tui_app_load_messages() {
     let (storage, _temp) = create_test_storage();
 
     // Save some messages first
-    storage.save_message("msg-1", "Alice", "Bob", b"Hello").unwrap();
-    storage.save_message("msg-2", "Bob", "Alice", b"Hi there").unwrap();
+    storage
+        .save_message("msg-1", "Alice", "Bob", b"Hello")
+        .unwrap();
+    storage
+        .save_message("msg-2", "Bob", "Alice", b"Hi there")
+        .unwrap();
 
     let mut app = TuiApp::new(storage);
 
