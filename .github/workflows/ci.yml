@@ -16,6 +16,32 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
+  # Auto-tag on master push
+  tag:
+    name: Auto Tag
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Get version
+        id: version
+        run: |
+          VERSION=$(grep '^version = ' Cargo.toml | sed 's/version = "\(.*\)"/\1/')
+          TIMESTAMP=$(date +%Y%m%d%H%M%S)
+          TAG="v${VERSION}.${TIMESTAMP}"
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+
+      - name: Create tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -d ${{ steps.version.outputs.tag }} 2>/dev/null || true
+          git push origin :refs/tags/${{ steps.version.outputs.tag }} 2>/dev/null || true
+          git tag ${{ steps.version.outputs.tag }}
+          git push origin ${{ steps.version.outputs.tag }}
+
   test:
     name: Test
     runs-on: ubuntu-latest
