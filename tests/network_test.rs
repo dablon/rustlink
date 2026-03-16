@@ -268,8 +268,8 @@ async fn test_p2p_node_get_listen_addresses_empty_without_start() {
 
 #[test]
 fn test_p2p_event_debug() {
-    use libp2p::identity::PeerId;
     use libp2p::identity::Keypair;
+    use libp2p::identity::PeerId;
 
     // Generate a valid peer ID using libp2p
     let keypair = Keypair::generate_ed25519();
@@ -298,8 +298,8 @@ fn test_p2p_event_debug() {
 
 #[test]
 fn test_p2p_event_clone() {
-    use libp2p::identity::PeerId;
     use libp2p::identity::Keypair;
+    use libp2p::identity::PeerId;
 
     let keypair = Keypair::generate_ed25519();
     let peer_id = PeerId::from(keypair.public());
@@ -311,8 +311,8 @@ fn test_p2p_event_clone() {
 
 #[test]
 fn test_p2p_event_clone_all_variants() {
-    use libp2p::identity::PeerId;
     use libp2p::identity::Keypair;
+    use libp2p::identity::PeerId;
 
     let keypair = Keypair::generate_ed25519();
     let peer_id = PeerId::from(keypair.public());
@@ -345,8 +345,8 @@ fn test_p2p_event_clone_all_variants() {
 
 #[test]
 fn test_p2p_event_debug_format() {
-    use libp2p::identity::PeerId;
     use libp2p::identity::Keypair;
+    use libp2p::identity::PeerId;
 
     let keypair = Keypair::generate_ed25519();
     let peer_id = PeerId::from(keypair.public());
@@ -368,8 +368,8 @@ fn test_p2p_event_debug_format() {
 
 #[test]
 fn test_p2p_event_debug_all_variants() {
-    use libp2p::identity::PeerId;
     use libp2p::identity::Keypair;
+    use libp2p::identity::PeerId;
 
     let keypair = Keypair::generate_ed25519();
     let peer_id = PeerId::from(keypair.public());

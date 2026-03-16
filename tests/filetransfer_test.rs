@@ -1,4 +1,7 @@
-use rustlink::filetransfer::{calculate_checksum, split_into_chunks, verify_integrity, TransferProgress, TransferStatus, FileTransferMessage, CHUNK_SIZE};
+use rustlink::filetransfer::{
+    calculate_checksum, split_into_chunks, verify_integrity, FileTransferMessage, TransferProgress,
+    TransferStatus, CHUNK_SIZE,
+};
 
 #[test]
 fn test_checksum() {
@@ -12,7 +15,10 @@ fn test_checksum_empty() {
     let data = b"";
     let checksum = calculate_checksum(data);
     assert_eq!(checksum.len(), 64);
-    assert_eq!(checksum, "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855");
+    assert_eq!(
+        checksum,
+        "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    );
 }
 
 #[test]
@@ -52,12 +58,7 @@ fn test_verify_integrity_invalid() {
 
 #[test]
 fn test_transfer_progress_new() {
-    let progress = TransferProgress::new(
-        "file-123".to_string(),
-        "test.txt".to_string(),
-        1000,
-        10,
-    );
+    let progress = TransferProgress::new("file-123".to_string(), "test.txt".to_string(), 1000, 10);
     assert_eq!(progress.file_id, "file-123");
     assert_eq!(progress.filename, "test.txt");
     assert_eq!(progress.total_size, 1000);
@@ -68,12 +69,8 @@ fn test_transfer_progress_new() {
 
 #[test]
 fn test_transfer_progress_add_chunk() {
-    let mut progress = TransferProgress::new(
-        "file-123".to_string(),
-        "test.txt".to_string(),
-        100,
-        2,
-    );
+    let mut progress =
+        TransferProgress::new("file-123".to_string(), "test.txt".to_string(), 100, 2);
 
     progress.add_chunk(vec![1, 2, 3]);
     assert_eq!(progress.received_chunks, 1);
@@ -86,7 +83,8 @@ fn test_transfer_progress_add_chunk() {
 
 #[test]
 fn test_progress_percent() {
-    let mut progress = TransferProgress::new("file-123".to_string(), "test.txt".to_string(), 100, 4);
+    let mut progress =
+        TransferProgress::new("file-123".to_string(), "test.txt".to_string(), 100, 4);
 
     assert_eq!(progress.progress_percent(), 0.0);
 
@@ -111,10 +109,14 @@ fn test_progress_percent_zero_chunks() {
 
 #[test]
 fn test_mark_failed() {
-    let mut progress = TransferProgress::new("file-123".to_string(), "test.txt".to_string(), 100, 2);
+    let mut progress =
+        TransferProgress::new("file-123".to_string(), "test.txt".to_string(), 100, 2);
     progress.add_chunk(vec![1]);
     progress.mark_failed("Connection lost");
-    assert_eq!(progress.status, TransferStatus::Failed("Connection lost".to_string()));
+    assert_eq!(
+        progress.status,
+        TransferStatus::Failed("Connection lost".to_string())
+    );
 }
 
 #[test]
@@ -123,7 +125,12 @@ fn test_file_transfer_message_new_request() {
     let msg = FileTransferMessage::new_request("test.txt", data.len() as u64, data);
 
     match msg {
-        FileTransferMessage::Request { file_id, filename, file_size, checksum } => {
+        FileTransferMessage::Request {
+            file_id,
+            filename,
+            file_size,
+            checksum,
+        } => {
             assert!(!file_id.is_empty());
             assert_eq!(filename, "test.txt");
             assert_eq!(file_size, data.len() as u64);
@@ -160,7 +167,11 @@ fn test_file_transfer_message_new_reject() {
 fn test_file_transfer_message_new_chunk() {
     let msg = FileTransferMessage::new_chunk("file-123", 0, vec![1, 2, 3]);
     match msg {
-        FileTransferMessage::Chunk { file_id, chunk_index, data } => {
+        FileTransferMessage::Chunk {
+            file_id,
+            chunk_index,
+            data,
+        } => {
             assert_eq!(file_id, "file-123");
             assert_eq!(chunk_index, 0);
             assert_eq!(data, vec![1, 2, 3]);

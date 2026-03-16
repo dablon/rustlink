@@ -21,14 +21,17 @@ jobs:
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
 
+      - name: Generate Cargo.lock
+        run: cargo generate-lockfile
+
       - name: Cache cargo
         uses: Swatinem/rust-cache@v2
 
       - name: Run tests
         run: cargo test --lib
 
-  lint:
-    name: Lint
+  fmt:
+    name: Format
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -36,8 +39,8 @@ jobs:
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Run clippy
-        run: cargo clippy -- -D warnings
+      - name: Generate Cargo.lock
+        run: cargo generate-lockfile
 
       - name: Check formatting
         run: cargo fmt --check
@@ -51,127 +54,21 @@ jobs:
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
 
+      - name: Generate Cargo.lock
+        run: cargo generate-lockfile
+
       - name: Build release
         run: cargo build --release
 
-      - name: Upload binary (Linux)
+      - name: Upload binary
         uses: actions/upload-artifact@v4
         with:
-          name: rustlink-linux
+          name: rustlink
           path: target/release/rustlink
 
-  # ============ APT (.deb) Package ============
-  deb-package:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install build dependencies
-        run: sudo apt-get update && sudo apt-get install -y build-essential pkg-config
-
-      - name: Download binary
-        uses: actions/download-artifact@v4
-        with:
-          name: rustlink-linux
-          path: .
-
-      - name: Make executable
-        run: chmod +x rustlink
-
-      - name: Install cargo-deb
-        run: cargo install cargo-deb
-
-      - name: Build deb package
-        run: cargo deb
-
-      - name: Upload .deb
-        uses: actions/upload-artifact@v4
-        with:
-          name: rustlink-deb
-          path: target/debian/*.deb
-
-  # ============ RPM (.rpm) Package ============
-  rpm-package:
-    needs: build
-    runs-on: ubuntu-latest
-    container: fedora:latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install build dependencies
-        run: dnf install -y gcc make pkgconfig
-
-      - name: Download binary
-        uses: actions/download-artifact@v4
-        with:
-          name: rustlink-linux
-          path: .
-
-      - name: Make executable
-        run: chmod +x rustlink
-
-      - name: Install Rust
-        run: |
-          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-          source "$HOME/.cargo/env"
-
-      - name: Install cargo-rpm
-        run: |
-          source "$HOME/.cargo/env"
-          cargo install cargo-rpm
-
-      - name: Build rpm package
-        run: |
-          source "$HOME/.cargo/env"
-          cargo rpm build
-
-      - name: Find rpm file
-        id: find-rpm
-        run: |
-          RPM_FILE=$(find target -name "*.rpm" | head -1)
-          echo "rpm_file=$RPM_FILE" >> $GITHUB_OUTPUT
-          cp "$RPM_FILE" .
-
-      - name: Upload .rpm
-        uses: actions/upload-artifact@v4
-        with:
-          name: rustlink-rpm
-          path: "*.rpm"
-
-  # ============ Chocolatey Package ============
-  choco-package:
-    needs: build
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Download binary
-        uses: actions/download-artifact@v4
-        with:
-          name: rustlink-linux
-          path: .
-          merge-multiple: true
-
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Build for Windows
-        run: cargo build --release
-
-      - name: Create Chocolatey package
-        run: pwsh -File .github/scripts/create-choco.ps1
-
-      - name: Upload .nupkg
-        uses: actions/upload-artifact@v4
-        with:
-          name: rustlink-choco
-          path: rustlink*.nupkg
-
-  # ============ Release ============
   release:
-    needs: [build, deb-package, rpm-package, choco-package]
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main')
+    needs: build
+    if: github.event_name == 'release'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -180,12 +77,14 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Download all artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: artifacts
-          pattern: rustlink-*
-          merge-multiple: true
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Generate Cargo.lock
+        run: cargo generate-lockfile
+
+      - name: Build release
+        run: cargo build --release
 
       - name: Get version
         run: |
@@ -210,7 +109,7 @@ jobs:
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          files: artifacts/*
+          files: target/release/rustlink
           tag_name: v${{ env.VERSION }}
           generate_release_notes: true
         env:

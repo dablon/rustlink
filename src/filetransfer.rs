@@ -13,14 +13,9 @@ pub enum FileTransferMessage {
         checksum: String, // SHA256
     },
     /// Accept file transfer
-    Accept {
-        file_id: String,
-    },
+    Accept { file_id: String },
     /// Reject file transfer
-    Reject {
-        file_id: String,
-        reason: String,
-    },
+    Reject { file_id: String, reason: String },
     /// Chunk of file data
     Chunk {
         file_id: String,
@@ -28,15 +23,9 @@ pub enum FileTransferMessage {
         data: Vec<u8>,
     },
     /// Transfer completed
-    Complete {
-        file_id: String,
-        checksum: String,
-    },
+    Complete { file_id: String, checksum: String },
     /// Transfer failed
-    Failed {
-        file_id: String,
-        reason: String,
-    },
+    Failed { file_id: String, reason: String },
 }
 
 impl FileTransferMessage {

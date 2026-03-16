@@ -39,9 +39,9 @@ fn test_new_creates_indexes() {
     let conn = storage.conn.lock().unwrap();
 
     // Check indexes exist
-    let mut stmt = conn.prepare(
-        "SELECT name FROM sqlite_master WHERE type='index' AND name LIKE 'idx_%'"
-    ).unwrap();
+    let mut stmt = conn
+        .prepare("SELECT name FROM sqlite_master WHERE type='index' AND name LIKE 'idx_%'")
+        .unwrap();
 
     let indexes: Vec<String> = stmt
         .query_map([], |row| row.get(0))
@@ -61,7 +61,10 @@ fn test_save_and_get_identity() {
 
     let result = storage.get_identity().unwrap();
     assert!(result.is_some());
-    assert_eq!(result.unwrap(), ("12D3KooWTest".to_string(), "testuser".to_string()));
+    assert_eq!(
+        result.unwrap(),
+        ("12D3KooWTest".to_string(), "testuser".to_string())
+    );
 }
 
 #[test]
@@ -116,7 +119,8 @@ fn test_add_multiple_friends() {
     // Direct SQL to set status to accepted for testing
     {
         let conn = storage.conn.lock().unwrap();
-        conn.execute("UPDATE friends SET status = 'accepted'", []).unwrap();
+        conn.execute("UPDATE friends SET status = 'accepted'", [])
+            .unwrap();
     }
 
     let friends = storage.get_friends().unwrap();
@@ -132,7 +136,8 @@ fn test_friend_fields() {
     // Directly check friend in DB
     {
         let conn = storage.conn.lock().unwrap();
-        conn.execute("UPDATE friends SET status = 'accepted'", []).unwrap();
+        conn.execute("UPDATE friends SET status = 'accepted'", [])
+            .unwrap();
     }
 
     let friends = storage.get_friends().unwrap();
@@ -149,12 +154,14 @@ fn test_save_and_get_messages() {
     let (storage, _temp) = create_test_storage();
 
     // Save a message
-    let msg_id = storage.save_message(
-        "msg-123",
-        "12D3KooWSender",
-        "12D3KooWReceiver",
-        b"Hello world!",
-    ).unwrap();
+    let msg_id = storage
+        .save_message(
+            "msg-123",
+            "12D3KooWSender",
+            "12D3KooWReceiver",
+            b"Hello world!",
+        )
+        .unwrap();
 
     assert!(msg_id > 0);
 
@@ -188,7 +195,9 @@ fn test_save_multiple_messages() {
 fn test_message_fields() {
     let (storage, _temp) = create_test_storage();
 
-    storage.save_message("msg-test", "peerA", "peerB", b"Test content").unwrap();
+    storage
+        .save_message("msg-test", "peerA", "peerB", b"Test content")
+        .unwrap();
 
     let messages = storage.get_messages("peerA").unwrap();
     assert_eq!(messages.len(), 1);
@@ -238,7 +247,9 @@ fn test_binary_content() {
 
     // Test with binary data (not valid UTF-8)
     let binary_data: Vec<u8> = vec![0x00, 0x01, 0x02, 0xFF, 0xFE];
-    storage.save_message("msg-binary", "A", "B", &binary_data).unwrap();
+    storage
+        .save_message("msg-binary", "A", "B", &binary_data)
+        .unwrap();
 
     let messages = storage.get_messages("A").unwrap();
     // Should be converted to UTF-8 lossy
