@@ -100,54 +100,6 @@ jobs:
           name: rustlink-deb
           path: target/debian/*.deb
 
-  # ============ RPM (.rpm) Package ============
-  rpm-package:
-    needs: build
-    runs-on: ubuntu-latest
-    container: fedora:latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install build dependencies
-        run: dnf install -y gcc make pkgconfig
-
-      - name: Download binary
-        uses: actions/download-artifact@v4
-        with:
-          name: rustlink-linux
-          path: .
-
-      - name: Make executable
-        run: chmod +x rustlink
-
-      - name: Install Rust
-        run: |
-          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-          source "$HOME/.cargo/env"
-
-      - name: Install cargo-rpm
-        run: |
-          source "$HOME/.cargo/env"
-          cargo install cargo-rpm
-
-      - name: Build rpm package
-        run: |
-          source "$HOME/.cargo/env"
-          cargo rpm build
-
-      - name: Find rpm file
-        id: find-rpm
-        run: |
-          RPM_FILE=$(find target -name "*.rpm" | head -1)
-          echo "rpm_file=$RPM_FILE" >> $GITHUB_OUTPUT
-          cp "$RPM_FILE" .
-
-      - name: Upload .rpm
-        uses: actions/upload-artifact@v4
-        with:
-          name: rustlink-rpm
-          path: "*.rpm"
-
   # ============ Chocolatey Package ============
   choco-package:
     needs: build
@@ -182,7 +134,7 @@ jobs:
 
   # ============ Release ============
   release:
-    needs: [build, deb-package, rpm-package, choco-package]
+    needs: [build, deb-package, choco-package]
     if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main')
     runs-on: ubuntu-latest
     permissions:
