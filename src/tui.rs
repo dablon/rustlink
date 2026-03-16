@@ -5,7 +5,7 @@ use ratatui::{
     style::{Color, Style},
     text::{Line, Span},
     widgets::{Block, Borders, List, ListItem, Paragraph},
-    Frame, Terminal,
+    Terminal,
 };
 use std::io;
 use std::sync::Arc;
@@ -56,9 +56,8 @@ pub fn run_tui(storage: Storage) -> Result<()> {
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
 
-    // Main render loop
-    loop {
-        terminal.draw(|f| {
+    // Render once (simplified version - full event handling would use crossterm events)
+    terminal.draw(|f| {
             let chunks = Layout::default()
                 .direction(Direction::Vertical)
                 .constraints([
@@ -156,11 +155,6 @@ pub fn run_tui(storage: Storage) -> Result<()> {
 
             f.render_widget(status_bar, chunks[2]);
         })?;
-
-        // Handle input events
-        // Note: This is a simplified version - full event handling would use crossterm events
-        break; // Exit for now - TUI requires proper event loop
-    }
 
     Ok(())
 }
