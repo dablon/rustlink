@@ -25,7 +25,7 @@ pub struct Message {
 
 #[derive(Clone)]
 pub struct Storage {
-    conn: Arc<Mutex<Connection>>,
+    pub conn: Arc<Mutex<Connection>>,
 }
 
 #[allow(dead_code)]
@@ -139,8 +139,8 @@ impl Storage {
     pub fn get_messages(&self, peer_id: &str) -> Result<Vec<Message>> {
         let conn = self.conn.lock().unwrap();
         let mut stmt = conn.prepare(
-            "SELECT id, from_peer, to_peer, content, sent_at, received, delivered 
-             FROM messages 
+            "SELECT id, from_peer, to_peer, content, sent_at, received, delivered
+             FROM messages
              WHERE from_peer = ?1 OR to_peer = ?1
              ORDER BY sent_at DESC
              LIMIT 100",

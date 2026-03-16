@@ -90,7 +90,7 @@ mod cli_tests {
         let args = vec!["rustlink", "run"];
         let opts = Opts::parse_from(&args);
         match opts.command {
-            Commands::Run => {}
+            Commands::Run { .. } => {}
             _ => panic!("Expected Run command"),
         }
     }

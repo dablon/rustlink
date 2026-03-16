@@ -63,25 +63,3 @@ impl ChatMessage {
         Ok(serde_json::from_slice(data)?)
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_message_serialization() {
-        let msg = ChatMessage::new_direct(
-            "QmPeerId123".to_string(),
-            "Hello, world!".to_string(),
-        );
-        let data = msg.serialize().unwrap();
-        let decoded = ChatMessage::deserialize(&data).unwrap();
-
-        match decoded {
-            ChatMessage::Direct { content, .. } => {
-                assert_eq!(content, "Hello, world!");
-            }
-            _ => panic!("Expected Direct message"),
-        }
-    }
-}

@@ -36,8 +36,8 @@ $ rustlink send archivo.zip 12D3KooWAbc123
 📦 Enociando archivo.zip (2.3 MB)
 ████████████████████░░░░ 84%
 
-# Iniciar nodo P2P
-$ rustlink run
+# Iniciar nodo P2P (con nodos bootstrap)
+$ rustlink run --bootstrap /ip4/147.75.80.110/tcp/4001/p2p/QmNnooDu7bfjPFoTZYxMNLWUQJyrVwtbZg5gvUBJyJt4Wz
 🚀 Iniciando nodo P2P...
 ```
 
@@ -46,25 +46,27 @@ $ rustlink run
 - 🔐 **Identidad Descentralizada** — Keypair Ed25519, sin servidor de registro
 - 🌐 **P2P Real** — libp2p con Kademlia DHT + mDNS
 - 🔒 **E2E Encryption** — Noise Protocol integrado
-- 📡 **NAT Traversal** — Hole punching + relay fallback
-- 💬 **Chat** — Mensajería en tiempo real
-- 📁 **Transferencia de Archivos** — Con verificación SHA256
+- 📡 **NAT Traversal** — Relay fallback
+- 💬 **Chat** — Protocolo definido (`/rustlink/chat/1.0.0`)
+- 📁 **Transferencia de Archivos** — Chunks de 64KB con verificación SHA256
 - 🗄️ **Storage Local** — SQLite para mensajes y amigos
+- 🎨 **TUI** — Interfaz interactiva con ratatui
 
 ## 🏗️ Arquitectura
 
 ```
 ┌─────────────────────────────────────────┐
-│           CLI Layer (clap)              │
-│  init, login, add, chat, send, run    │
+│           CLI Layer (clap + ratatui)    │
+│  init, login, add, chat, send, run, tui│
 ├─────────────────────────────────────────┤
 │           Core Logic Layer              │
-│  Identity, Messaging, Storage           │
+│  Identity, Messaging, FileTransfer      │
 ├─────────────────────────────────────────┤
 │           Network Layer (libp2p)        │
-│  Kademlia DHT, mDNS, Noise, QUIC      │
+│  Kademlia DHT, mDNS, Noise, TCP        │
 ├─────────────────────────────────────────┤
 │           Storage (SQLite)              │
+│  Friends, Messages, Identity            │
 └─────────────────────────────────────────┘
 ```
 
@@ -73,6 +75,7 @@ $ rustlink run
 - **Rust** con tokio async
 - **libp2p 0.56** — P2P networking
 - **clap** — CLI
+- **ratatui** — TUI
 - **rusqlite** — SQLite local
 
 ## 🚀 Instalación
@@ -122,19 +125,24 @@ cargo build --release
 | `rustlink friends` | Listar amigos |
 | `rustlink add <peer_id>` | Agregar amigo |
 | `rustlink chat <peer_id>` | Abrir chat |
+| `rustlink tui` | Abrir interfaz TUI interactiva |
 | `rustlink send <file> <peer_id>` | Enviar archivo |
-| `rustlink run` | Iniciar nodo P2P |
+| `rustlink run [--bootstrap <addr>]` | Iniciar nodo P2P |
+| `rustlink version` | Ver versión |
 
 ## 📁 Estructura del Proyecto
 
 ```
 rustlink/
 ├── src/
-│   ├── main.rs          # Entry point
-│   ├── cli.rs           # CLI commands
-│   ├── identity.rs      # Identity management
-│   ├── storage.rs       # SQLite storage
-│   └── network.rs       # P2P networking
+│   ├── main.rs            # Entry point
+│   ├── cli.rs             # CLI commands
+│   ├── identity.rs        # Identity management
+│   ├── storage.rs         # SQLite storage
+│   ├── network.rs         # P2P networking (Kademlia)
+│   ├── messaging.rs       # Chat protocol
+│   ├── filetransfer.rs   # File transfer protocol
+│   └── tui.rs            # TUI with ratatui
 ├── Cargo.toml
 ├── README.md
 └── SPEC.md
@@ -146,13 +154,20 @@ rustlink/
 - **DHT**: Kademlia para descubrimiento global de peers
 - **mDNS**: Descubrimiento automático en red local
 - **Noise Protocol**: Cifrado E2E automático
+- **Bootstrap Nodes**: Nodos iniciales para unirse a la red (configurables con `--bootstrap`)
 
 ## ⚠️ Estado
 
-**En desarrollo** — La red P2P básica funciona, faltan:
-- Protocolos de chat/file-transfer completos
-- TUI con ratatui
-- Bootstrap nodes públicos
+**En desarrollo** — La red P2P básica funciona:
+
+- ✅ Identity management (Ed25519 keypair)
+- ✅ Kademlia DHT discovery
+- ✅ mDNS local discovery
+- ✅ SQLite storage
+- ✅ Chat protocol (definido)
+- ✅ File transfer protocol (definido, chunks 64KB + SHA256)
+- ✅ TUI skeleton (ratatui)
+- 🔧 Bootstrap nodes (configurables via CLI)
 
 ## 📝 Licencia
 

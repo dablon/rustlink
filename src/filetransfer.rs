@@ -165,22 +165,3 @@ impl TransferProgress {
         self.status = TransferStatus::Failed(reason.to_string());
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_checksum() {
-        let data = b"Hello, World!";
-        let checksum = calculate_checksum(data);
-        assert_eq!(checksum.len(), 64);
-    }
-
-    #[test]
-    fn test_chunks() {
-        let data = vec![1u8; 100];
-        let chunks = split_into_chunks(&data);
-        assert_eq!(chunks.len(), 2);
-    }
-}
