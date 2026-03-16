@@ -142,7 +142,7 @@ jobs:
   # ============ Release ============
   release:
     needs: [build, deb-package, choco-package]
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main')
+    if: github.event_name == 'release'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -163,26 +163,11 @@ jobs:
           VERSION=$(grep '^version = ' Cargo.toml | sed 's/version = "\(.*\)"/\1/')
           echo "VERSION=$VERSION" >> $GITHUB_ENV
 
-      - name: Configure Git
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-
-      - name: Delete old tag if exists
-        run: |
-          git tag -d v${{ env.VERSION }} 2>/dev/null || true
-          git push origin :refs/tags/v${{ env.VERSION }} 2>/dev/null || true
-
-      - name: Create tag
-        run: |
-          git tag "v${{ env.VERSION }}"
-          git push origin "v${{ env.VERSION }}"
-
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
           files: artifacts/*
-          tag_name: v${{ env.VERSION }}
+          tag_name: ${{ github.event.release.tag_name }}
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
