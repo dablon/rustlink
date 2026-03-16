@@ -20,6 +20,9 @@ jobs:
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+        timeout-minutes: 30
 
       - name: Cache cargo
         uses: Swatinem/rust-cache@v2
@@ -35,6 +38,9 @@ jobs:
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+        timeout-minutes: 30
 
       - name: Run clippy
         run: cargo clippy -- -D warnings
@@ -50,6 +56,9 @@ jobs:
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+        timeout-minutes: 30
 
       - name: Build release
         run: cargo build --release
@@ -155,6 +164,9 @@ jobs:
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+        timeout-minutes: 30
 
       - name: Build for Windows
         run: cargo build --release
