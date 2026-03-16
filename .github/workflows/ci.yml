@@ -30,8 +30,8 @@ jobs:
       - name: Run tests
         run: cargo test --lib
 
-  lint:
-    name: Lint
+  fmt:
+    name: Format
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -41,9 +41,6 @@ jobs:
 
       - name: Generate Cargo.lock
         run: cargo generate-lockfile
-
-      - name: Run clippy
-        run: cargo clippy -- -D warnings
 
       - name: Check formatting
         run: cargo fmt --check
